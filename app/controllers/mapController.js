@@ -8,7 +8,15 @@ const mapController = {
     },
 
     async create(req, res) {
-        res.render('map');
+        console.log(req.body)
+        const map = await Map.create({ 
+            name: req.body.name, 
+            description: req.body.description, 
+            users_id: 1, 
+            level_id: 1}
+        );
+
+        res.redirect('/map/add');
     },
     async add(req, res) {
         console.log("route maps/add");
