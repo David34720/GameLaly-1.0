@@ -38,11 +38,6 @@ class Notification {
 }
 
 setTimeout(() => {
-    new Notification('toto est content');
+    new Notification('Bienvenu sur Laly\'s Game !', 'success', 5e3);
 }, 1000);
-setTimeout(() => {
-    new Notification('toto est content', 'warning');
-}, 2000);
-setTimeout(() => {
-    new Notification('toto est content', 'danger');
-}, 3000);
+

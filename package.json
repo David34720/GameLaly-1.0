@@ -12,8 +12,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "db:create": "psql -U oquiz -f data/create-tables.sql",
-    "db:seed": "psql -U oquiz < data/seed-data.sql",
+    "db:create": "psql -U laly -d game1 -f data/create-tables.sql",
+    "db:seed": "psql -U laly -d game1 < data/seed-data.sql",
     "db:reset": "npm run db:create && npm run db:seed"
   },
   "keywords": [

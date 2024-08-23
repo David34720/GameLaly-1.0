@@ -1,3 +1,13 @@
+:root {
+    --primary-color: #3c0f91;
+    --secondary-color: #4e3fac;
+    --text-color: #e4e0ff;
+    --textPrimary-color: #3E1E04;
+    --hover-color: #c50fa0;
+    --hover-bg-color: #182b79;
+}
+
+
 a {
     text-decoration: none;
 }
@@ -29,4 +39,15 @@ a:hover {
 }
 .danger {
     background-color: red;
+}
+.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+body {
+    background-color: var(--primary-color);
+    width: 100%;
+}
+.container {
+    background: linear-gradient(90deg, rgba(191,189,43,1) 5%, rgba(0,181,255,1) 27%, rgba(229,0,232,1) 47%, rgba(229,0,232,1) 56%, rgba(0,181,255,1) 74%, rgba(191,189,43,1) 93%);
+    width: 100%;
 }
