@@ -1,0 +1,32 @@
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.notifications {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    top: 25px;
+    right: 25px;
+}
+
+.notification {
+    margin-bottom: 1rem;
+    color: white;
+    padding: 1em;
+}
+
+.success {
+    background-color: green;
+}
+
+.warning {
+    background-color: orange;
+}
+.danger {
+    background-color: red;
+}
