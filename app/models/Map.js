@@ -3,10 +3,10 @@ const { Model, DataTypes, literal } = require('sequelize');
 // * notre connexion à la BDD
 const { sequelizeConnection } = require('../db/sequelize');
 
-class Tag extends Model {}
+class Map extends Model {}
 
 
-Tag.init(
+Map.init(
     {
         id: {
             type: DataTypes.INTEGER,
@@ -15,7 +15,22 @@ Tag.init(
         },
 
         name: {
-            type: DataTypes.STRING(150),
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+
+        description: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+
+        users_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+
+        level_id: {
+            type: DataTypes.INTEGER,
             allowNull: false,
         },
 
@@ -32,8 +47,8 @@ Tag.init(
         // * cette option est la pour connecter le modèle à la BDD
         sequelize: sequelizeConnection(),
         // * Cette option est facultative, si on ne la met pas, sequelize va analyser le nom de la classe et s'en servir pour se connecter à la BDD en le mettant en minusucules et au pluriel.
-        tableName: 'tag',
+        tableName: 'map',
     }
 );
 
-module.exports = Tag;
+module.exports = Map;

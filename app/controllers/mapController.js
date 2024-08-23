@@ -1,10 +1,19 @@
-const Level = require('../models/Level');
+const Map = require('../models/Map');
 
-const levelController = {
+const mapController = {
     async index(req, res) {
-        const levels = await Level.findAll();
+        const maps = await Map.findAll();
 
-        res.render('levels', { levels: levels });
+        res.render('maps', { maps: maps });
+    },
+
+    async create(req, res) {
+        res.render('map');
+    },
+    async add(req, res) {
+        console.log("route maps/add");
+        const maps = await Map.findAll();
+        res.render('maps', { maps: maps });
     },
 
     async edit(req, res) {
@@ -43,4 +52,4 @@ const levelController = {
     },
 };
 
-module.exports = { levelController };
+module.exports = { mapController };

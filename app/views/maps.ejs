@@ -13,23 +13,23 @@
     Le niveau a été enregistré avec succès.
   </div> -->
 
-  <h1 class="my-3">Tous les niveaux</h1>
+  <h1 class="my-3">Toutes les maps</h1>
 
   <ul>
 
-    <% if (locals.levels?.length) { %>
+    <% if (maps?.length) { %>
 
-        <% for( let index = 0; index < levels.length; index++ ) { %>
+        <% for( let index = 0; index < maps.length; index++ ) { %>
             <!-- Level -->
             <li>
-              <span class="badge bg-info p-3 mx-3 mb-1"><%= levels[index].name %></span>
+              <span class="badge bg-info p-3 mx-3 mb-1"><%= maps[index].name %></span>
 
               <!-- On doit paramétrer un URL avec l'ID du level à mettre à jour -->
               <a class="btn btn-outline-info py-0 px-1 ms-3 fs-6 text-decoration-none"
-                href="/levels/edit/<%= levels[index].id %>">ÉDITER</a>
+                href="/maps/edit/<%= maps[index].id %>">ÉDITER</a>
 
               <!-- Seules les 'method' GET & POST sont autorisées dans les FORM html. Du coup on ruse, même si les endpoints résultants ne sont pas très REST friendly -->
-              <form class="d-inline" action="/levels/delete/<%= levels[index].id %>" method="POST">
+              <form class="d-inline" action="/maps/delete/<%= maps[index].id %>" method="POST">
                 <input class="btn btn-outline-danger py-0 px-1 ms-3 fs-6" type="submit" value="SUPPRIMER">
               </form>
             </li>
@@ -42,10 +42,12 @@
 
   <h1 class="my-4">Ajouter un niveau</h1>
 
-  <form class="mb-5" action="/levels/create" method="POST">
-    <label class="form-label" for="name">Nom du niveau</label>
+  <form class="mb-5" action="/map/create" method="POST">
+    <label class="form-label" for="name">Nom de la map</label>
     <input class="form-control" type="text" name="name" id="name" required>
-    <input class="btn btn-primary mt-3" type="submit" value="Ajouter le niveau">
+    <label class="form-label" for="description">Description</label>
+    <textarea class="form-control" type="text" name="description" id="description" required></textarea>
+    <input class="btn btn-primary mt-3" type="submit" value="Ajouter la map">
   </form>
 
 </main>

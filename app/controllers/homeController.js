@@ -1,20 +1,20 @@
-const Level = require('../models/Level');
+const Map = require('../models/Map');
 
 const homeController = {
     async index(req, res) {
         try {
-            // * find by primary key
-            const level = await Level.findByPk(4);
-            // ! exercice : trouver un autre moyen de sélectionner le level avec l'id de 4
-            let levelfour = await Level.findOne({
-                where: {
-                    id: 4,
-                },
-            });
+            // // * find by primary key
+            // const level = await Level.findByPk(4);
+            // // ! exercice : trouver un autre moyen de sélectionner le level avec l'id de 4
+            // let levelfour = await Level.findOne({
+            //     where: {
+            //         id: 4,
+            //     },
+            // });
 
-            levelfour = await Level.findAll({ where: { id: 4 } });
+            // levelfour = await Level.findAll({ where: { id: 4 } });
 
-            console.log(levelfour);
+            // console.log(levelfour);
             // // * Controle surprise : 2 minutes pour trouver comment mettre à jour le level avec l'ID 4
             // level.name = 'Mickey';
             // await level.save();
@@ -29,10 +29,11 @@ const homeController = {
 
             // * await Level.create({ name: 'quindim' });
             // * 2 minutes pour trouver un autre moyen de créer un objet level
-            const newlevel = Level.build({ name: 'Quindim the beasts' });
-            await newlevel.save();
-
-            res.render('index');
+            // const newlevel = Level.build({ name: 'Quindim the beasts' });
+            // await newlevel.save();
+            const maps = await Map.findAll();
+            console.log(maps);
+            res.render('index', { maps: maps });
         } catch (error) {
             console.log(error);
         }
