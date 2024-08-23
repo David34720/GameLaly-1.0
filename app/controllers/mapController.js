@@ -1,4 +1,6 @@
 const Map = require('../models/Map');
+const Notification = require('../../assets/js/app');
+
 
 const mapController = {
     async index(req, res) {
@@ -15,7 +17,8 @@ const mapController = {
             users_id: 1, 
             level_id: 1}
         );
-
+        new Notification('Map ajoutée avec succès', 'success', 5e3);
+        
         res.redirect('/map/add');
     },
     async add(req, res) {
