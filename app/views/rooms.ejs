@@ -1,0 +1,40 @@
+<!--  Include headers here -->
+<%- include('partials/head') %>
+
+<main class="container py-4">
+
+  <h1 class="my-3">Toutes les pièces</h1>
+
+  <ul>
+    <% if (rooms?.length) { %>
+        <% for (let index = 0; index < maps.length; index++) { %>
+            <li>
+              <span class="badge bg-info p-3 mx-3 mb-1"><%= rooms[index].name %></span>
+              <a class="btn btn-outline-info py-0 px-1 ms-3 fs-6 text-decoration-none"
+                href="/map/edit/<%= rooms[index].id %>">ÉDITER</a>
+              <form class="d-inline" action="/rooms/delete/<%= maps[index].id %>" method="POST">
+                <input class="btn btn-outline-danger py-0 px-1 ms-3 fs-6" type="submit" value="SUPPRIMER">
+              </form>
+            </li>
+        <% } %>
+    <% } else { %>
+        <li>Aucune pièce disponible</li>
+    <% } %>
+  </ul>
+
+  <h1 class="my-4">Ajouter une pièce</h1>
+
+  <form class="mb-5" action="/rooms/create" method="POST">
+    <label class="form-label" for="name">Nom de la pièce</label>
+    <input class="form-control" type="text" name="name" id="name" required>
+    <label class="form-label" for="description">Description</label>
+    <textarea class="form-control" type="text" name="description" id="description" required></textarea>
+    <input class="btn btn-primary mt-3" type="submit" value="Ajouter la pièce">
+  </form>
+
+</main>
+
+
+
+<!--  Include footers here -->
+<%- include('partials/foot') %>

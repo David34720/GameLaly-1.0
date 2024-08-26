@@ -7,18 +7,36 @@
 
   <ul>
     <% if (maps?.length) { %>
-        <% for (let index = 0; index < maps.length; index++) { %>
-            <li>
-              <span class="badge bg-info p-3 mx-3 mb-1"><%= maps[index].name %></span>
-              <a class="btn btn-outline-info py-0 px-1 ms-3 fs-6 text-decoration-none"
-                href="/map/edit/<%= maps[index].id %>">ÉDITER</a>
-              <form class="d-inline" action="/map/delete/<%= maps[index].id %>" method="POST">
-                <input class="btn btn-outline-danger py-0 px-1 ms-3 fs-6" type="submit" value="SUPPRIMER">
-              </form>
-            </li>
-        <% } %>
+      <% for (let i = 0; i < maps.length; i++) { %>
+        <li>
+          <span class="badge bg-info p-3 mx-3 mb-1"><%= maps[i].name %></span>
+          <a class="btn btn-outline-info py-0 px-1 ms-3 fs-6 text-decoration-none"
+            href="/map/edit/<%= maps[i].id %>">ÉDITER</a>
+          <form class="d-inline" action="/map/delete/<%= maps[i].id %>" method="POST">
+            <input class="btn btn-outline-danger py-0 px-1 ms-3 fs-6" type="submit" value="SUPPRIMER">
+          </form>
+  
+          <% %>
+          <% if (maps[i].rooms?.length) { %>
+            <ul>
+              <% for (let j = 0; j < maps[i].rooms.length; j++) { %>
+                <li>
+                  <span class="badge bg-info p-3 mx-3 mb-1"><%= maps[i].rooms[j].name %></span>
+                  <a class="btn btn-outline-info py-0 px-1 ms-3 fs-6 text-decoration-none"
+                    href="/room/edit/<%= maps[i].rooms[j].id %>">ÉDITER</a>
+                  <form class="d-inline" action="/room/delete/<%= maps[i].rooms[j].id %>" method="POST">
+                    <input class="btn btn-outline-danger py-0 px-1 ms-3 fs-6" type="submit" value="SUPPRIMER">
+                  </form>
+                </li>
+              <% } %>
+            </ul>
+          <% } else { %>
+            <li>Aucune pièce disponible</li>
+          <% } %>
+        </li>
+      <% } %>
     <% } else { %>
-        <li>Aucune map disponible</li>
+      <li>Aucune map disponible</li>
     <% } %>
   </ul>
 

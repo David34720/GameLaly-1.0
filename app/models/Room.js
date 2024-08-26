@@ -3,10 +3,10 @@ const { Model, DataTypes, literal } = require('sequelize');
 // * notre connexion à la BDD
 const { sequelizeConnection } = require('../db/sequelize');
 
-class question extends Model {}
+class Room extends Model {}
 
 
-question.init(
+Room.init(
     {
         id: {
             type: DataTypes.INTEGER,
@@ -14,34 +14,59 @@ question.init(
             autoIncrement: true,
         },
 
+        name: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+
         description: {
             type: DataTypes.TEXT,
             allowNull: false,
         },
 
-        anecdote: {
+        map_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+
+        first_room: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+        },
+
+        cell_size: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+
+        nb_rows: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+
+        nb_cols: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+
+        start_x: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+
+        start_y: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+
+        img_bg: {
             type: DataTypes.TEXT,
-            allowNull: false,
+            allowNull: false,       
         },
 
-        wiki: {
+        color_bg: {
             type: DataTypes.TEXT,
-            allowNull: false,
-        },
-
-        answer_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
-
-        level_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
-
-        quiz_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
+            allowNull: false,       
         },
 
         created_at: {
@@ -57,8 +82,8 @@ question.init(
         // * cette option est la pour connecter le modèle à la BDD
         sequelize: sequelizeConnection(),
         // * Cette option est facultative, si on ne la met pas, sequelize va analyser le nom de la classe et s'en servir pour se connecter à la BDD en le mettant en minusucules et au pluriel.
-        tableName: 'question',
+        tableName: 'room',
     }
 );
 
-module.exports = question;
+module.exports = Room;

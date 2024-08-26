@@ -1,27 +1,22 @@
-const { Map, Room } = require('../models');
+const Room = require('../models/Room');
 
 
-const mapController = {
+const roomController = {
     async index(req, res) { //route / (page index)
         
-        const maps = await Map.findAll();
-        ;
+        const rooms = await Room.findAll();
+      
         const notification = req.session.notification || null;
         req.session.notification = null; 
 
-        res.render('maps', { maps, notification });
+        res.render('rooms', { rooms, notification });
     },
     
     async add(req, res) { // route get map/add
         
         console.log("route maps/add");
-        const maps = await Map.findAll({
-            include: {
-                model: Room,
-                as: 'rooms'
-            }
-        });
-        console.log('maps:', JSON.stringify(maps, null, 2))
+        const maps = await Map.findAll();
+
         const notification = req.session.notification || null;
         req.session.notification = null; 
         
@@ -75,8 +70,16 @@ const mapController = {
 
 
 
+    async store(req, res) {
+        // ! On devrait valider name, on ne sert jamais d'une donnée qui vient d'un client sans la valider
+        const { name } = req.body;
+
+        await Level.create({ name: name });
+
+        res.redirect('/levels');
+    },
 
     
 };
 
-module.exports = { mapController };
+module.exports = { roomController };
