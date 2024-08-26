@@ -25,13 +25,15 @@ Room.belongsTo(Map, {
 });
 
 Room.hasMany(Cell, { 
-    foreignKey: 'room_id', 
+    foreignKey: 'room_id',
+    onDelete: 'CASCADE', 
     as: 'cells' // Association pour les cells
 });
 
 Cell.belongsTo(Room, { 
     foreignKey: 'room_id', 
-    as: 'room' 
+    as: 'room',
+    onDelete: 'SET NULL'
 });
 
 Cell.belongsTo(Room, { 

@@ -2,12 +2,21 @@
 <%- include('partials/head') %>
 
 <main class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between">
+    <!-- Bouton SUPPRIMER aligné à gauche -->
+    <form class="d-inline mb-0" action="/rooms/delete/<%= room.id %>" method="POST">
+      <input class="btn btn-outline-danger py-0 px-3 fs-6" type="submit" value="SUPPRIMER">
+    </form>
   
-  <h1 class="my-3 text-center"><%= room.name %></h1>
+    <!-- Titre centré -->
+    <h1 class="flex-grow-1 text-center my-3"><%= room.name %></h1>
   
+    <!-- Une div vide pour garder l'espace à droite du titre -->
+    <div style="width: 100px;"></div> <!-- Ajustez cette largeur si nécessaire -->
+  </div>
   <!-- Formulaire pour éditer la Room en ligne -->
   <form action="/room/update/<%= room.id %>" method="POST" class="row g-2 mb-4">
-    <div class="half-col">
+    <div class="col-md-1">
       <label for="first_Room" class="form-label">1ère Room?</label>
       <select class="form-select" id="first_Room" name="first_Room">
         <option value="true" <%= room.first_Room ? 'selected' : '' %>>Oui</option>
@@ -55,13 +64,13 @@
       <input type="text" class="form-control" id="img_bg" name="img_bg" value="<%= room.img_bg %>">
     </div>
 
-    <div class="col-md-1">
+    <div class="half-col" >
       <label for="color_bg" class="form-label">Couleur</label>
-      <input type="color" class="form-control" id="color_bg" name="color_bg" value="<%= room.color_bg %>">
+      <input style="height: 36px" type="color" class="form-control" id="color_bg" name="color_bg" value="<%= room.color_bg %>">
     </div>
 
 
-    <div class="col-md-1 align-self-end">
+    <div class="col-md-1 align-self-end" >
       <button type="submit" class="btn btn-primary w-100">Mettre à Jour</button>
     </div>
     
@@ -71,6 +80,7 @@
   <div id="map-container" class="mt-4" style="width: 100%; height: calc(100vh - 150px); border: 1px solid #ccc;">
     <!-- La map sera générée ici via du JavaScript -->
   </div>
+  
 
 </main>
 

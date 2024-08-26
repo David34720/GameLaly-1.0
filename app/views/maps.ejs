@@ -12,26 +12,29 @@
           <span class="badge bg-info p-3 mx-3 mb-1"><%= maps[i].name %></span>
           <a class="btn btn-outline-info py-0 px-1 ms-3 fs-6 text-decoration-none"
             href="/map/edit/<%= maps[i].id %>">ÉDITER</a>
+
           <form class="d-inline" action="/map/delete/<%= maps[i].id %>" method="POST">
             <input class="btn btn-outline-danger py-0 px-1 ms-3 fs-6" type="submit" value="SUPPRIMER">
           </form>
-  
+
+          <a class="btn btn-outline-info py-0 px-1 ms-3 fs-6 text-decoration-none"
+            href="/rooms/add/<%= maps[i].id %>">Ajouter une pièce</a>
+
           <% if (maps[i].rooms?.length) { %>
             <ul>
               <% for (let j = 0; j < maps[i].rooms.length; j++) { %>
                 <li>
                   <span class="badge bg-info p-3 mx-3 mb-1"><%= maps[i].rooms[j].name %></span>
                   <a class="btn btn-outline-info py-0 px-1 ms-3 fs-6 text-decoration-none"
-                    href="/room/edit/<%= maps[i].rooms[j].id %>">ÉDITER</a>
-                  <form class="d-inline" action="/room/delete/<%= maps[i].rooms[j].id %>" method="POST">
-                    <input class="btn btn-outline-danger py-0 px-1 ms-3 fs-6" type="submit" value="SUPPRIMER">
-                  </form>
+                    href="/rooms/edit/<%= maps[i].rooms[j].id %>">ÉDITER</a>
+                  
 
                   <% if (maps[i].rooms[j].cells?.length) { %>
-                    <ul>
+                    <ul class="btn btn-outline-info py-0 px-1 ms-3 fs-6 text-decoration-none">
+                      <em><%= maps[i].rooms[j].name %> to:</em>
                       <% maps[i].rooms[j].cells.forEach(function(cell) { %>
                         <% if (cell.linkedRoom) { %>
-                          <li><em>Linked to:</em> <%= cell.linkedRoom.name %></li>
+                          <li> <%= cell.linkedRoom.name %></li>
                         <% } %>
                       <% }) %>
                     </ul>
@@ -39,11 +42,13 @@
                 </li>
               <% } %>
             </ul>
+
           <% } else { %>
             <li>Aucune pièce disponible</li>
           <% } %>
         </li>
       <% } %>
+
     <% } else { %>
       <li>Aucune map disponible</li>
     <% } %>

@@ -1,6 +1,6 @@
-const { Room } = require('../models');
+const { Room, Cell } = require('../models');
 
-
+const { sequelizeConnection } = require('../db/sequelize');
 const roomController = {
     async index(req, res) { //route / (page index)
         
@@ -13,14 +13,32 @@ const roomController = {
     },
     
     async add(req, res) { // route get map/add
-        
-        console.log("route maps/add");
-        const maps = await Map.findAll();
+        const { map_id } = req.params;
+
+        console.log("route rooms/add", map_id);
+        let isFirst = true;
+        const qtyRoomWithMapId = await Room.count({ where: { map_id: map_id } });
+        if (qtyRoomWithMapId > 0) {
+            isFirst = false;
+        }
+        const room = await Room.create({ // route get/rooms/add/:map_id(\\d+)
+            name: "Nouvelle pièce",
+            description: "Description de la nouvelle carte",
+            map_id: map_id,
+            first_room: isFirst,
+            cell_size: 30,
+            nb_rows: 10,
+            nb_cols: 10,
+            start_x: 0,
+            start_y: 0,
+            img_bg: "",
+            color_bg: "#FFFFFF"
+        });
 
         const notification = req.session.notification || null;
         req.session.notification = null; 
         
-        res.render('maps', { maps, notification });
+        res.render(`rooms`, { room, notification });
     },
     async create(req, res) { // route post map/create
         
@@ -42,7 +60,6 @@ const roomController = {
     async edit(req, res) {
         const { id } = req.params;
         const room = await Room.findByPk(id);
-        console.log(room);
         const notification =  null;
 
         res.render('rooms', { room, notification });
@@ -52,10 +69,12 @@ const roomController = {
         // ! On devrait valider name, on ne sert jamais d'une donnée qui vient d'un client sans la valider
         const { name, description } = req.body;
         const { id } = req.params;
+
         req.session.notification = {
             message: 'Carte modifiée avec succès',
             level: 'success'
         };
+
         await Map.update({ name, description, users_id: 1, level_id: 1 }, { where: { id: id } });
 
         res.redirect('/map/add');
@@ -63,11 +82,29 @@ const roomController = {
     async destroy(req, res) {
         const { id } = req.params;
 
-        await Map.destroy({ where: { id: id } });
+        const transaction = await sequelizeConnection().transaction();
+
+   
+        // Supprimer les Cells liées
+        await Cell.destroy({ where: { room_id: id }, transaction });
+
+        // Vérifier la suppression
+        const cellsRemaining = await Cell.findAll({ where: { room_id: id } });
+        if (cellsRemaining.length > 0) {
+            throw new Error('Failed to delete all cells associated with the room');
+        }
+
+        // Supprimer la Room
+        await Room.destroy({ where: { id: id }, transaction });
+
+        // Valider la transaction
+        await transaction.commit();
+
         req.session.notification = {
-            message: 'Carte supprimée avec succès',
+            message: 'Room supprimée avec succès',
             level: 'success'
         };
+
         res.redirect('/map/add');
     },
 
