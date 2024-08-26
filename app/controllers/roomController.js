@@ -1,4 +1,4 @@
-const Room = require('../models/Room');
+const { Room } = require('../models');
 
 
 const roomController = {
@@ -38,13 +38,16 @@ const roomController = {
 
         res.redirect('/map/add');
     },
+
     async edit(req, res) {
         const { id } = req.params;
-
-        const map = await Map.findByPk(id);
+        const room = await Room.findByPk(id);
+        console.log(room);
         const notification =  null;
-        res.render('mapEdit', { map, notification });
+
+        res.render('rooms', { room, notification });
     },
+
     async update(req, res) {
         // ! On devrait valider name, on ne sert jamais d'une donnée qui vient d'un client sans la valider
         const { name, description } = req.body;

@@ -1,6 +1,7 @@
 const Level = require('./Level');
 const Map = require('./Map');
 const Room = require('./Room');
+const Cell = require('./Cell');
 
 // Associations
 Level.hasMany(Map, {
@@ -23,5 +24,21 @@ Room.belongsTo(Map, {
     as: 'map',
 });
 
-module.exports = { Map, Level, Room };
+Room.hasMany(Cell, { 
+    foreignKey: 'room_id', 
+    as: 'cells' // Association pour les cells
+});
+
+Cell.belongsTo(Room, { 
+    foreignKey: 'room_id', 
+    as: 'room' 
+});
+
+Cell.belongsTo(Room, { 
+    foreignKey: 'room_id_link', 
+    as: 'linkedRoom' 
+});
+
+module.exports = { Map, Level, Room, Cell };
+
 

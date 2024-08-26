@@ -16,7 +16,6 @@
             <input class="btn btn-outline-danger py-0 px-1 ms-3 fs-6" type="submit" value="SUPPRIMER">
           </form>
   
-          <% %>
           <% if (maps[i].rooms?.length) { %>
             <ul>
               <% for (let j = 0; j < maps[i].rooms.length; j++) { %>
@@ -27,6 +26,16 @@
                   <form class="d-inline" action="/room/delete/<%= maps[i].rooms[j].id %>" method="POST">
                     <input class="btn btn-outline-danger py-0 px-1 ms-3 fs-6" type="submit" value="SUPPRIMER">
                   </form>
+
+                  <% if (maps[i].rooms[j].cells?.length) { %>
+                    <ul>
+                      <% maps[i].rooms[j].cells.forEach(function(cell) { %>
+                        <% if (cell.linkedRoom) { %>
+                          <li><em>Linked to:</em> <%= cell.linkedRoom.name %></li>
+                        <% } %>
+                      <% }) %>
+                    </ul>
+                  <% } %>
                 </li>
               <% } %>
             </ul>
@@ -51,8 +60,6 @@
   </form>
 
 </main>
-
-
 
 <!--  Include footers here -->
 <%- include('partials/foot') %>

@@ -1,40 +1,78 @@
 <!--  Include headers here -->
 <%- include('partials/head') %>
 
-<main class="container py-4">
+<main class="container-fluid py-4">
+  
+  <h1 class="my-3 text-center"><%= room.name %></h1>
+  
+  <!-- Formulaire pour éditer la Room en ligne -->
+  <form action="/room/update/<%= room.id %>" method="POST" class="row g-2 mb-4">
+    <div class="half-col">
+      <label for="first_Room" class="form-label">1ère Room?</label>
+      <select class="form-select" id="first_Room" name="first_Room">
+        <option value="true" <%= room.first_Room ? 'selected' : '' %>>Oui</option>
+        <option value="false" <%= !room.first_Room ? 'selected' : '' %>>Non</option>
+      </select>
+    </div>
+    
+    <div class="col-md-2">
+      <label for="name" class="form-label">Nom</label>
+      <input type="text" class="form-control" id="name" name="name" value="<%= room.name %>" required>
+    </div>
 
-  <h1 class="my-3">Toutes les pièces</h1>
+    <div class="col-md-3">
+      <label for="description" class="form-label">Description</label>
+      <input type="text" class="form-control" id="description" name="description" value="<%= room.description %>" required>
+    </div>
 
-  <ul>
-    <% if (rooms?.length) { %>
-        <% for (let index = 0; index < maps.length; index++) { %>
-            <li>
-              <span class="badge bg-info p-3 mx-3 mb-1"><%= rooms[index].name %></span>
-              <a class="btn btn-outline-info py-0 px-1 ms-3 fs-6 text-decoration-none"
-                href="/map/edit/<%= rooms[index].id %>">ÉDITER</a>
-              <form class="d-inline" action="/rooms/delete/<%= maps[index].id %>" method="POST">
-                <input class="btn btn-outline-danger py-0 px-1 ms-3 fs-6" type="submit" value="SUPPRIMER">
-              </form>
-            </li>
-        <% } %>
-    <% } else { %>
-        <li>Aucune pièce disponible</li>
-    <% } %>
-  </ul>
+    <div class="half-col">
+      <label for="cell_size" class="form-label">Cellules</label>
+      <input type="number" class="form-control" id="cell_size" name="cell_size" value="<%= room.cell_size %>" required>
+    </div>
 
-  <h1 class="my-4">Ajouter une pièce</h1>
+    <div class="half-col">
+      <label for="nb_rows" class="form-label">Lignes</label>
+      <input type="number" class="form-control" id="nb_rows" name="nb_rows" value="<%= room.nb_rows %>" required>
+    </div>
 
-  <form class="mb-5" action="/rooms/create" method="POST">
-    <label class="form-label" for="name">Nom de la pièce</label>
-    <input class="form-control" type="text" name="name" id="name" required>
-    <label class="form-label" for="description">Description</label>
-    <textarea class="form-control" type="text" name="description" id="description" required></textarea>
-    <input class="btn btn-primary mt-3" type="submit" value="Ajouter la pièce">
+    <div class="half-col">
+      <label for="nb_columns" class="form-label">Colonnes</label>
+      <input type="number" class="form-control" id="nb_columns" name="nb_columns" value="<%= room.nb_columns %>" required>
+    </div>
+
+    <div class="half-col">
+      <label for="start_x" class="form-label">Départ X</label>
+      <input type="number" class="form-control" id="start_x" name="start_x" value="<%= room.start_x %>" required>
+    </div>
+
+    <div class="half-col">
+      <label for="start_y" class="form-label">Départ Y</label>
+      <input type="number" class="form-control" id="start_y" name="start_y" value="<%= room.start_y %>" required>
+    </div>
+
+    <div class="col-md-2">
+      <label for="img_bg" class="form-label">Image de Fond</label>
+      <input type="text" class="form-control" id="img_bg" name="img_bg" value="<%= room.img_bg %>">
+    </div>
+
+    <div class="col-md-1">
+      <label for="color_bg" class="form-label">Couleur</label>
+      <input type="color" class="form-control" id="color_bg" name="color_bg" value="<%= room.color_bg %>">
+    </div>
+
+
+    <div class="col-md-1 align-self-end">
+      <button type="submit" class="btn btn-primary w-100">Mettre à Jour</button>
+    </div>
+    
   </form>
 
+  <!-- Div pour la génération de la map côté client -->
+  <div id="map-container" class="mt-4" style="width: 100%; height: calc(100vh - 150px); border: 1px solid #ccc;">
+    <!-- La map sera générée ici via du JavaScript -->
+  </div>
+
 </main>
-
-
 
 <!--  Include footers here -->
 <%- include('partials/foot') %>

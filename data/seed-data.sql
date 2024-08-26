@@ -29,4 +29,15 @@ VALUES
 ('Le secret de famille', 'Sauras-tu garder le secret?', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('Sauver maman', 'Enigmes', 1, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
+INSERT INTO room (name, description, map_id, first_room, cell_size, nb_rows, nb_cols, start_x, start_y, img_bg, color_bg)
+VALUES ('Room Lambda', 'Description de la Room Lambda', 1, false, 50, 10, 10, 0, 0, 'background.png', '#FFFFFF');
+INSERT INTO cell (room_id, room_id_link, pos_x, pos_y, item_id, message_id)
+VALUES
+(2, 4, 1, 1, NULL, NULL),  -- Cell dans la Room 1, pointant vers la Room 2
+(2, 4, 2, 2, NULL, NULL),  -- Cell dans la Room 1, pointant vers la Room 3
+(4, 2, 3, 3, NULL, NULL),  -- Cell dans la Room 2, pointant vers la Room 1
+(4, 2, 4, 4, NULL, NULL);  -- Cell dans la Room 2, pointant vers la Room 3
+
+
+
 COMMIT;

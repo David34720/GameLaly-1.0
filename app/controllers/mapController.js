@@ -1,4 +1,4 @@
-const { Map, Room } = require('../models');
+const { Map, Room, Cell } = require('../models');
 
 
 const mapController = {
@@ -18,8 +18,16 @@ const mapController = {
         const maps = await Map.findAll({
             include: {
                 model: Room,
-                as: 'rooms'
-            }
+                as: 'rooms',
+                include: {
+                    model: Cell,
+                    as: 'cells',
+                    include: {
+                        model: Room,
+                        as: 'linkedRoom',
+                    },
+                },
+            },
         });
         console.log('maps:', JSON.stringify(maps, null, 2))
         const notification = req.session.notification || null;
