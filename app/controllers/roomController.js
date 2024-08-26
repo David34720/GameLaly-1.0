@@ -66,19 +66,50 @@ const roomController = {
     },
 
     async update(req, res) {
-        // ! On devrait valider name, on ne sert jamais d'une donnée qui vient d'un client sans la valider
-        const { name, description } = req.body;
+        // Valider et extraire les champs du corps de la requête
+        const { 
+            name, 
+            description,
+            map_id,
+            first_room,
+            cell_size,
+            nb_rows,
+            nb_cols,  
+            start_x,
+            start_y,
+            img_bg,
+            color_bg
+        } = req.body;
+    
         const { id } = req.params;
-
+    
         req.session.notification = {
-            message: 'Carte modifiée avec succès',
+            message: 'Room modifiée avec succès',
             level: 'success'
         };
-
-        await Map.update({ name, description, users_id: 1, level_id: 1 }, { where: { id: id } });
-
-        res.redirect('/map/add');
+    
+        // Mise à jour de la room
+        const updatedRoom = await Room.update({ 
+            name, 
+            description, 
+            map_id,
+            first_room,
+            cell_size,
+            nb_rows,
+            nb_cols,  
+            start_x,
+            start_y,
+            img_bg,
+            color_bg,
+            updated_at: new Date()             
+        }, { 
+            where: { id }
+        });
+    
+        console.log("Updated Room : ", updatedRoom[0]);
+        res.redirect('/rooms/edit/' + id);
     },
+
     async destroy(req, res) {
         const { id } = req.params;
 

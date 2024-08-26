@@ -15,12 +15,12 @@
     <div style="width: 100px;"></div> <!-- Ajustez cette largeur si nécessaire -->
   </div>
   <!-- Formulaire pour éditer la Room en ligne -->
-  <form action="/room/update/<%= room.id %>" method="POST" class="row g-2 mb-4">
+  <form action="/rooms/update/<%= room.id %>" method="POST" class="row g-2 mb-4">
     <div class="col-md-1">
-      <label for="first_Room" class="form-label">1ère Room?</label>
-      <select class="form-select" id="first_Room" name="first_Room">
-        <option value="true" <%= room.first_Room ? 'selected' : '' %>>Oui</option>
-        <option value="false" <%= !room.first_Room ? 'selected' : '' %>>Non</option>
+      <label for="first_room" class="form-label">1ère pièce?</label>
+      <select class="form-select" id="first_room" name="first_room">
+        <option value="true" <%= room.first_room ? 'selected' : '' %>>Oui</option>
+        <option value="false" <%= !room.first_room ? 'selected' : '' %>>Non</option>
       </select>
     </div>
     
@@ -45,8 +45,8 @@
     </div>
 
     <div class="half-col">
-      <label for="nb_columns" class="form-label">Colonnes</label>
-      <input type="number" class="form-control" id="nb_columns" name="nb_columns" value="<%= room.nb_columns %>" required>
+      <label for="nb_cols" class="form-label">Colonnes</label>
+      <input type="number" class="form-control" id="nb_cols" name="nb_cols" value="<%= room.nb_cols %>" required>
     </div>
 
     <div class="half-col">
