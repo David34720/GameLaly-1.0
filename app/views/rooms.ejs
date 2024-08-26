@@ -7,7 +7,9 @@
     <form class="d-inline mb-0" action="/rooms/delete/<%= room.id %>" method="POST">
       <input class="btn btn-outline-danger py-0 px-3 fs-6" type="submit" value="SUPPRIMER">
     </form>
-  
+    <form class="d-inline mb-0" action="/rooms/duplicate/<%= room.id %>" method="POST">
+      <input class="btn btn-outline-info py-0 px-3 fs-6" type="submit" value="DUPLIQUER">
+    </form>
     <!-- Titre centré -->
     <h1 class="flex-grow-1 text-center my-3"><%= room.name %></h1>
   

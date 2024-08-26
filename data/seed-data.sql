@@ -33,10 +33,10 @@ INSERT INTO room (name, description, map_id, first_room, cell_size, nb_rows, nb_
 VALUES ('Room Lambda', 'Description de la Room Lambda', 1, false, 50, 10, 10, 0, 0, 'background.png', '#FFFFFF');
 INSERT INTO cell (room_id, room_id_link, pos_x, pos_y, item_id, message_id)
 VALUES
-(2, 4, 1, 1, NULL, NULL),  -- Cell dans la Room 1, pointant vers la Room 2
-(2, 4, 2, 2, NULL, NULL),  -- Cell dans la Room 1, pointant vers la Room 3
-(4, 2, 3, 3, NULL, NULL),  -- Cell dans la Room 2, pointant vers la Room 1
-(4, 2, 4, 4, NULL, NULL);  -- Cell dans la Room 2, pointant vers la Room 3
+(2, 16, 1, 1, NULL, NULL),  -- Cell dans la Room 1, pointant vers la Room 2
+(2, 12, 2, 2, NULL, NULL),  -- Cell dans la Room 1, pointant vers la Room 3
+(12, 13, 3, 3, NULL, NULL),  -- Cell dans la Room 2, pointant vers la Room 1
+(12, 16, 4, 4, NULL, NULL);  -- Cell dans la Room 2, pointant vers la Room 3
 
 
 

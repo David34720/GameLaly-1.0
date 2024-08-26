@@ -1,3 +1,4 @@
+// Cell.js
 const { Model, DataTypes, literal } = require('sequelize');
 const { sequelizeConnection } = require('../db/sequelize');
 
@@ -25,7 +26,15 @@ Cell.init(
                 model: 'Room',
                 key: 'id',
             },
-            onDelete: 'SET NULL',  // Optionnel : à définir selon votre logique métier
+            onDelete: 'SET NULL',  // Lien vers une autre Room
+        },
+        pos_x: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+        pos_y: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
         },
         item_id: {
             type: DataTypes.INTEGER,
@@ -41,14 +50,6 @@ Cell.init(
                 key: 'id',
             },
         },
-        pos_x: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
-        pos_y: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,
@@ -61,8 +62,5 @@ Cell.init(
         tableName: 'cell',
     }
 );
-
-// Associations
-
 
 module.exports = Cell;

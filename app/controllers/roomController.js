@@ -110,34 +110,61 @@ const roomController = {
         res.redirect('/rooms/edit/' + id);
     },
 
+    async duplicate(req, res) {
+        const { id } = req.params;
+        const room = await Room.findByPk(id);
+
+        const newRoom = await Room.create({ 
+            name: room.name + " - Copie",
+            description: room.description,
+            map_id: room.map_id,
+            first_room: false,
+            cell_size: room.cell_size,
+            nb_rows: room.nb_rows,
+            nb_cols: room.nb_cols,
+            start_x: room.start_x,
+            start_y: room.start_y,
+            img_bg: room.img_bg,
+            color_bg: room.color_bg
+        });
+        res.redirect('/rooms/edit/' + newRoom.id);
+    },
+
     async destroy(req, res) {
         const { id } = req.params;
-
+    
         const transaction = await sequelizeConnection().transaction();
-
-   
-        // Supprimer les Cells liées
-        await Cell.destroy({ where: { room_id: id }, transaction });
-
-        // Vérifier la suppression
-        const cellsRemaining = await Cell.findAll({ where: { room_id: id } });
-        if (cellsRemaining.length > 0) {
-            throw new Error('Failed to delete all cells associated with the room');
+    
+        try {
+            // 1. Supprimer toutes les cellules où room_id_link pointe vers la Room à supprimer
+            await Cell.destroy({ where: { room_id_link: id }, transaction });
+    
+            // 2. Supprimer toutes les cellules liées à la Room via room_id
+            await Cell.destroy({ where: { room_id: id }, transaction });
+    
+            // 3. Supprimer la Room elle-même
+            await Room.destroy({ where: { id: id }, transaction });
+    
+            // 4. Valider la transaction
+            await transaction.commit();
+    
+            req.session.notification = {
+                message: 'Room supprimée avec succès',
+                level: 'success'
+            };
+        } catch (error) {
+            // 5. Annuler la transaction en cas d'erreur
+            await transaction.rollback();
+            console.error('Failed to delete room:', error);
+            req.session.notification = {
+                message: 'Erreur lors de la suppression de la Room',
+                level: 'danger'
+            };
         }
-
-        // Supprimer la Room
-        await Room.destroy({ where: { id: id }, transaction });
-
-        // Valider la transaction
-        await transaction.commit();
-
-        req.session.notification = {
-            message: 'Room supprimée avec succès',
-            level: 'success'
-        };
-
+    
         res.redirect('/map/add');
     },
+    
 
 
 
