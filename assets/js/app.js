@@ -1,19 +1,9 @@
-class Notification {
-    level;
-    message;
-    notif;
-    duration;
-
-    /**
-     *
-     * @param {string} message
-     * @param {string} level une classe CSS
-     * @param {number} duration en ms
-     */
-    constructor(message, level = 'success', duration = 3e3) {
+class CustomNotification {
+    constructor(message, level = 'success', duration = 3000) {
         this.message = message;
         this.level = level;
         this.duration = duration;
+        this.notif = null; // Pour stocker l'élément notification
         this.notify();
     }
 
@@ -29,15 +19,22 @@ class Notification {
     notify() {
         this.create();
 
-        document.querySelector('.notifications').append(this.notif);
+        const notificationContainer = document.querySelector('.notifications');
+        
+        if (!notificationContainer) {
+            console.error('Le conteneur .notifications est introuvable');
+            return;
+        }
+
+        notificationContainer.append(this.notif);
 
         setTimeout(() => {
-            document.querySelector('.notification').remove();
+            this.notif.remove();
         }, this.duration);
     }
 }
 
-setTimeout(() => {
-    new Notification('Bienvenu sur Laly\'s Game !', 'success', 5e3);
-}, 1000);
-
+// Utilisation de la classe CustomNotification
+// setTimeout(() => {
+//     new CustomNotification('Bienvenue sur Laly\'s Game !', 'success', 5000);
+// }, 200);

@@ -3,44 +3,26 @@
 
 <main class="container py-4">
 
-  <!-- Toast en cas d'erreur -->
-  <!-- <div class="alert alert-danger" role="alert">
-    Une erreur s'est produite lors de l'enregistrement du niveau.
-  </div> -->
-
-  <!-- Toast en cas de succès -->
-  <!-- <div class="alert alert-success" role="alert">
-    Le niveau a été enregistré avec succès.
-  </div> -->
-
   <h1 class="my-3">Toutes les maps</h1>
 
   <ul>
-
     <% if (maps?.length) { %>
-
-        <% for( let index = 0; index < maps.length; index++ ) { %>
-            <!-- Level -->
+        <% for (let index = 0; index < maps.length; index++) { %>
             <li>
               <span class="badge bg-info p-3 mx-3 mb-1"><%= maps[index].name %></span>
-
-              <!-- On doit paramétrer un URL avec l'ID du level à mettre à jour -->
               <a class="btn btn-outline-info py-0 px-1 ms-3 fs-6 text-decoration-none"
-                href="/maps/edit/<%= maps[index].id %>">ÉDITER</a>
-
-              <!-- Seules les 'method' GET & POST sont autorisées dans les FORM html. Du coup on ruse, même si les endpoints résultants ne sont pas très REST friendly -->
-              <form class="d-inline" action="/maps/delete/<%= maps[index].id %>" method="POST">
+                href="/map/edit/<%= maps[index].id %>">ÉDITER</a>
+              <form class="d-inline" action="/map/delete/<%= maps[index].id %>" method="POST">
                 <input class="btn btn-outline-danger py-0 px-1 ms-3 fs-6" type="submit" value="SUPPRIMER">
               </form>
             </li>
         <% } %>
-
+    <% } else { %>
+        <li>Aucune map disponible</li>
     <% } %>
-
-
   </ul>
 
-  <h1 class="my-4">Ajouter un niveau</h1>
+  <h1 class="my-4">Ajouter une Map</h1>
 
   <form class="mb-5" action="/map/create" method="POST">
     <label class="form-label" for="name">Nom de la map</label>
@@ -51,6 +33,8 @@
   </form>
 
 </main>
+
+
 
 <!--  Include footers here -->
 <%- include('partials/foot') %>

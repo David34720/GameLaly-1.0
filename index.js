@@ -2,6 +2,7 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const app = express();
+const initSession = require('./app/middlewares/initSession');
 const router = require('./app/routers/router');
 
 const port = process.env.PORT || 3000;
@@ -10,6 +11,8 @@ app.set('view engine', 'ejs');
 
 app.set('views', path.join(__dirname, 'app/views'));
 app.use(express.static(path.join(__dirname, 'assets')));
+
+app.use(initSession);
 
 app.use(express.urlencoded({ extended: false }));
 

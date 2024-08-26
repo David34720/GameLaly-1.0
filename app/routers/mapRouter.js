@@ -8,9 +8,9 @@ const {
 
 mapRouter.get('/map/add', catcher(mapController.add));
 mapRouter.post('/map/create', catcher(mapController.create));
-// levelRouter.get('/levels/edit/:id(\\d+)', levelController.edit);
-// levelRouter.post('/levels/update/:id(\\d+)', levelController.update);
-// levelRouter.post('/levels/create', levelController.store);
-// levelRouter.post('/levels/delete/:id(\\d+)', levelController.destroy);
+mapRouter.get('/map/edit/:id(\\d+)', mapController.edit);
+mapRouter.post('/map/update/:id(\\d+)', mapController.update);
+mapRouter.post('/map/delete/:id(\\d+)', mapController.destroy);
+
 
 module.exports = { mapRouter };

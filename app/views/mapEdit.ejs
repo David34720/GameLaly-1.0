@@ -1,0 +1,19 @@
+<%- include('partials/head') %>
+
+<main class="container py-4">
+
+    <h1 class="my-3">Modifier une Map</h1>
+  
+    <form class="mb-5" action="/map/update/<%= map.id %>" method="POST">
+      <label class="form-label" for="name">Nom actuel de la Map :  <b><%= map.name %></b></label>
+      <input class="form-control" type="text" name="name" id="name" placeholder="Nouveau nom">
+  
+      <label class="form-label" for="description">Description :</label>
+      <input class="form-control" type="text" name="description" id="description" value="<%= map.description %>">
+  
+      <input class="btn btn-primary mt-3" type="submit" value="Modifier la Map">
+    </form>
+  
+  </main>
+  
+  <%- include('partials/foot') %>

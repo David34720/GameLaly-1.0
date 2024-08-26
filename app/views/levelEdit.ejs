@@ -1,0 +1,18 @@
+<%- include('partials/head') %>
+
+<main class="container py-4">
+
+    <h1 class="my-3">Modifier un niveau</h1>
+  
+    <form class="mb-5" action="/levels/update/<%= level.id %>" method="POST">
+      <label class="form-label" for="name">Nom actuel de la level :  <b><%= level.name %></b></label>
+      <input class="form-control" type="text" name="name" id="name" placeholder="Nouveau nom">
+  
+  
+  
+      <input class="btn btn-primary mt-3" type="submit" value="Modifier le niveau">
+    </form>
+  
+  </main>
+  
+  <%- include('partials/foot') %>
