@@ -1,0 +1,59 @@
+<%- include('partials/head') %>
+
+<main class="container py-4">
+    <h1 class="my-3"><%= item ? 'Modifier' : 'Créer' %> un Item</h1>
+
+    <form class="mb-5" action="/items/update/<%= item.id %>" method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label class="form-label" for="name">Nom de l'Item</label>
+            <input class="form-control" type="text" name="name" id="name" placeholder="Nom de l'Item" value="<%= item ? item.name : '' %>" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="description">Description</label>
+            <input class="form-control" type="text" name="description" id="description" placeholder="Description de l'Item" value="<%= item ? item.description : '' %>" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="img">Image</label>
+            <input class="form-control" type="file" name="img" id="img" <%= item ? '' : 'required' %> > <!-- Champ de fichier pour l'image -->
+            <% if (item && item.img) { %>
+                <small>Image actuelle: <img src="<%= item.img %>" alt="Image de l'item" width="50"></small>
+            <% } %>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="item_type">Type d'Item</label>
+            <select class="form-select" name="item_type" id="item_type" required>
+                <option value="" <%= !item ? 'selected' : '' %>>Sélectionnez un type</option>
+                <option value="1" <%= item && item.item_type === 1 ? 'selected' : '' %>>Type 1</option>
+                <option value="2" <%= item && item.item_type === 2 ? 'selected' : '' %>>Type 2</option>
+                <!-- Ajouter d'autres types si nécessaire -->
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="effect">Effet</label>
+            <input class="form-control" type="number" name="effect" id="effect" placeholder="Valeur de l'effet" value="<%= item ? item.effect : '' %>" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="life">Vie</label>
+            <input class="form-control" type="number" name="life" id="life" placeholder="Points de vie" value="<%= item ? item.life : '' %>" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="value">Valeur</label>
+            <input class="form-control" type="number" name="value" id="value" placeholder="Valeur de l'Item" value="<%= item ? item.value : '' %>" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="context">Contexte</label>
+            <textarea class="form-control" name="context" id="context" rows="3" placeholder="Contexte d'utilisation" required><%= item ? item.context : '' %></textarea>
+        </div>
+
+        <input class="btn btn-primary mt-3" type="submit" value="<%= item ? 'Mettre à jour' : 'Créer' %> l'Item">
+    </form>
+</main>
+
+<%- include('partials/foot') %>

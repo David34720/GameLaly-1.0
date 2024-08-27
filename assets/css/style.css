@@ -48,8 +48,11 @@ body {
     width: 100%;
 }
 .container {
-    background: linear-gradient(90deg, rgba(191,189,43,1) 5%, rgba(0,181,255,1) 27%, rgba(229,0,232,1) 47%, rgba(229,0,232,1) 56%, rgba(0,181,255,1) 74%, rgba(191,189,43,1) 93%);
+    background: linear-gradient(90deg, rgba(191,189,43,1) 5%, rgba(0,181,255,0.7) 27%, rgba(229,0,232,0.7) 47%, rgba(229,0,232,0.7) 56%, rgba(0,181,255,0.7) 74%, rgba(191,189,43,1) 93%);
     width: 100%;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    margin-top: 10px;
 }
 .half-col {
     width: 4.16667%; /* Ce qui correspond à la moitié d'une colonne Bootstrap (1/24) */

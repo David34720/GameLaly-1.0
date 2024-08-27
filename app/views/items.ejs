@@ -1,0 +1,60 @@
+<%- include('partials/head') %>
+
+<main class="container py-4">
+    <% if (notification) { %>
+        <div class="alert alert-<%= notification.level %>">
+            <%= notification.message %>
+        </div>
+    <% } %>
+
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="my-3">Liste des Items</h1>
+        <a href="/items/add" class="btn btn-primary">Créer un nouvel Item</a> <!-- Bouton de création -->
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>Description</th>
+                <th>Image</th>
+                <th>Type</th>
+                <th>Effet</th>
+                <th>Vie</th>
+                <th>Valeur</th>
+                <th>Contexte</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% items.forEach(item => { %>
+                <tr>
+                    <td><%= item.id %></td>
+                    <td><%= item.name %></td>
+                    <td><%= item.description %></td>
+                    <td class="text-center">
+                        <% if (item.img && item.img !== 'ddd') { %>
+                            <img src="<%= item.img %>" alt="<%= item.name %>" class="img-fluid" style="max-width: 50px;">
+                        <% } else { %>
+                            <span class="no-image-icon" title="Image non disponible">&#x1F5BC;</span>
+                        <% } %>
+                    </td>
+                    <td><%= item.item_type %></td>
+                    <td><%= item.effect %></td>
+                    <td><%= item.life %></td>
+                    <td><%= item.value %></td>
+                    <td><%= item.context %></td>
+                    <td>
+                        <a href="/items/edit/<%= item.id %>" class="btn btn-warning btn-sm">Éditer</a>
+                        <form action="/items/delete/<%= item.id %>" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</main>
+
+<%- include('partials/foot') %>
