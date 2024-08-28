@@ -1,22 +1,22 @@
 const router = require('express').Router();
+
+const { authRouter } = require('./authRouter.js');
 const { mapRouter } = require('./mapRouter.js');
 const { levelRouter } = require('./levelRouter.js');
 const { roomRouter } = require('./roomRouter.js');
 const { itemRouter } = require('./itemRouter.js');
+const { homeController } = require('../controllers/homeController.js');
 
 const {
     handlers: {
         catcher
     }
 } = require('../middlewares');
-// const router = express.Router();
-// const { Router } = require('express');
-// const router = Router();
 
-const { homeController } = require('../controllers/homeController.js');
 
 router.get('/', catcher(homeController.index));
 
+router.use(authRouter)
 router.use(mapRouter);
 router.use(levelRouter);
 router.use(roomRouter)
