@@ -23,8 +23,9 @@
             <label class="form-label" for="item_type">Type d'Item</label>
             <select class="form-select" name="item_type" id="item_type" required>
                 <option value="">Sélectionnez un type</option>
-                <option value="1">Type 1</option>
-                <option value="2">Type 2</option>
+                <% types.forEach(type => { %>
+                    <option value="<%= type.id %>"><%= type.name %></option>
+                <% }); %>
             </select>
         </div>
 
@@ -53,4 +54,3 @@
 </main>
 
 <%- include('partials/foot') %>
-
