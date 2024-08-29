@@ -27,16 +27,23 @@
 
     <body>
         <!-- Navbar -->
-        <header
-            class="d-flex justify-content-between align-items-center p-3 bg-primary text-white"
-        >
+        <header class="d-flex justify-content-between align-items-center p-3 bg-primary text-white">
             <a href="#" class="h3 text-white text-decoration-none">Laly's Game</a>
+            <% if (locals.user) { %>
+                <span style="color: rgba(179, 97, 80, 0.7);">Connecté en tant que <%= locals.user.firstname %></span>
+            <% } %>
+            <span></span>
             <nav class="my-1">
                 <a class="p-2 text-white" href="/">Accueil</a>
+                <% if (locals.user) { %>
+                    <a class="p-2 text-white" href="/admin">Admin</a>
                 <a class="p-2 text-white" href="/map/add">Maps</a>
                 <a class="p-2 text-white" href="/levels">Levels</a>
                 <a class="p-2 text-white" href="/items">Items</a>
-                <a class="p-2 text-white" href="/register">S'inscrire</a>
-                <a class="p-2 text-white" href="/login">Se connecter</a>
+                    <a class="p-2" style="color: rgba(179, 97, 80, 0.7)"   href="/logout">Se déconnecter</a>
+                <% } else { %>
+                    <a class="p-2 text-white" href="/register">S'inscrire</a>
+                    <a class="p-2 text-white" href="/login">Se connecter</a>
+                <% } %>
             </nav>
         </header>

@@ -1,5 +1,6 @@
 const router = require('express').Router();
 
+const { adminRouter } = require('./adminRouter.js');
 const { authRouter } = require('./authRouter.js');
 const { mapRouter } = require('./mapRouter.js');
 const { levelRouter } = require('./levelRouter.js');
@@ -16,6 +17,7 @@ const {
 
 router.get('/', catcher(homeController.index));
 
+router.use(adminRouter)
 router.use(authRouter)
 router.use(mapRouter);
 router.use(levelRouter);

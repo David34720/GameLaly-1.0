@@ -4,6 +4,11 @@ const Room = require('./Room');
 const Cell = require('./Cell');
 const Item = require('./Item');
 const ItemType = require('./ItemType');
+const User = require('./User');
+const Role = require('./Role');
+const Permission = require('./Permission');
+const PermissionHasRole = require('./PermissionHasRole');
+
 
 // Un niveau (Level) a plusieurs cartes (Maps)
 Level.hasMany(Map, {
@@ -74,5 +79,29 @@ ItemType.hasMany(Item, {
     as: 'items',
 });
 
+Permission.belongsToMany(Role, {
+    through: PermissionHasRole,
+    foreignKey: 'permission_id',
+    otherKey: 'role_id',
+    as: 'roles',
+});
+
+Role.belongsToMany(Permission, {
+    through: PermissionHasRole,
+    foreignKey: 'role_id',
+    otherKey: 'permission_id',
+    as: 'permissions',
+});
+
+Role.hasMany(User, {
+    foreignKey: 'role_id',
+    as: 'users',
+});
+
+User.belongsTo(Role, {
+    foreignKey: 'role_id',
+    as: 'role',
+});
+
 // Export des modèles avec leurs relations
-module.exports = { Level, Map, Room, Cell, Item, ItemType };
+module.exports = { Level, Map, Room, Cell, Item, ItemType, User };

@@ -6,7 +6,7 @@ const initSession = expressSession({
     secret: process.env.SECRET,
     cookie: {
         secure: false,
-        maxAge: 1000 * 60 * 60, // ça fait une heure
+        maxAge: 1000 * 60 * 60 * 12, // ça fait 12 heures
         
     },
 });

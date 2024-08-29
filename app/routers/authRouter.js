@@ -1,6 +1,8 @@
 const authRouter = require('express').Router();
 const { registerController } = require('../controllers/registerController.js');
 const { sessionController } = require('../controllers/sessionController.js');
+
+const { isAuth } = require('../middlewares');
 const {
     handlers: {
         catcher

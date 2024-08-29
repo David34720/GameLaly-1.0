@@ -56,4 +56,8 @@ body {
 }
 .half-col {
     width: 4.16667%; /* Ce qui correspond à la moitié d'une colonne Bootstrap (1/24) */
-  }
+}
+
+.bg-white-transparent {
+    background-color: rgba(255, 255, 255, 0.65); /* blanc avec 80% d'opacité */
+}

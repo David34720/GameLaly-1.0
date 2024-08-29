@@ -4,10 +4,14 @@
 
   <h1>Inscription</h1>
 
-  <!-- Toast en cas d'erreur -->
-  <!-- <div class="alert alert-danger" role="alert">
-    Une erreur s'est produite lors de l'inscription.
-  </div> -->
+  <% if (locals.error) { %>
+
+    <div class="alert alert-danger" role="alert">
+     <%= error %>
+   </div>
+
+   <% } %>
+
 
   <form action="#" method="POST">
     <label class="form-label h4" for="firstname">Prénom</label>
