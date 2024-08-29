@@ -5,8 +5,15 @@ const { handlers: { catcher } } = require('../middlewares');
 const { auth } = require('../middlewares/auth.js');
 const { isAdmin } = require('../middlewares/isAdmin.js');
 
+
 // Route pour afficher la page d'administration
 adminRouter.get('/admin', [auth, isAdmin] , catcher(adminController.index));
+
+// Routes pour l'Impersonation des utilisateurs
+adminRouter.post('/admin/impersonate/:id', [auth, isAdmin], catcher(adminController.impersonateUser));
+adminRouter.post('/admin/revert-impersonation', [auth], catcher(adminController.revertImpersonation));
+
+
 
 // Routes pour la gestion des utilisateurs
 adminRouter.post('/users/updateRole/:id', catcher(adminController.updateUserRole));

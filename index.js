@@ -27,9 +27,15 @@ app.use(express.static(path.join(__dirname, 'assets')));
 // Pour analyser les requêtes POST avec des données URL-encodées
 app.use(express.urlencoded({ extended: false }));
 
+
 // Initialiser la session et authentification
 app.use(initSession);
 app.use(initUserSession);
+// Middleware pour rendre `originalAdmin` accessible dans toutes les vues
+app.use((req, res, next) => {
+    res.locals.originalAdmin = req.session.originalAdmin;
+    next();
+});
 
 // Utiliser le routeur principal
 app.use(router);

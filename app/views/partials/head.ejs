@@ -34,6 +34,11 @@
             <% } %>
             <span></span>
             <nav class="my-1">
+                <% if (locals.originalAdmin) { %>
+                    <form action="/admin/revert-impersonation" method="POST">
+                        <button type="submit" class="btn btn-warning">Revenir à mon compte</button>
+                    </form>
+                <% } %>
                 <a class="p-2 text-white" href="/">Accueil</a>
                 <% if (locals.user) { %>
                     <a class="p-2 text-white" href="/admin">Admin</a>
