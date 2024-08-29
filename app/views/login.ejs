@@ -4,10 +4,12 @@
 
   <h1>Se connecter</h1>
 
-  <!-- Toast en cas d'erreur  -->
-  <!-- <div class="alert alert-danger" role="alert">
-    Une erreur s'est produite lors de la connexion.
-  </div> -->
+   <!-- Toast en cas d'erreur  -->
+   <% if (locals.error) { %>
+    <div class="alert alert-danger" role="alert">
+      <%= error %>
+    </div>
+   <% } %>
 
   <form action="#" method="POST">
     <label class="form-label h4" for="email">Email</label>

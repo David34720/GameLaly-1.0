@@ -2,9 +2,11 @@ const express = require('express');
 const adminRouter = express.Router();
 const { adminController } = require('../controllers/adminController.js');
 const { handlers: { catcher } } = require('../middlewares');
+const { auth } = require('../middlewares/auth.js');
+const { isAdmin } = require('../middlewares/isAdmin.js');
 
 // Route pour afficher la page d'administration
-adminRouter.get('/admin', catcher(adminController.index));
+adminRouter.get('/admin', [auth, isAdmin] , catcher(adminController.index));
 
 // Routes pour la gestion des utilisateurs
 adminRouter.post('/users/updateRole/:id', catcher(adminController.updateUserRole));

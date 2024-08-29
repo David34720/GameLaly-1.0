@@ -13,16 +13,18 @@ const {
         catcher
     }
 } = require('../middlewares');
+const { auth } = require('../middlewares/auth.js');
+const { isAdmin } = require('../middlewares/isAdmin.js');
 
 
 router.get('/', catcher(homeController.index));
 
-router.use(adminRouter)
-router.use(authRouter)
-router.use(mapRouter);
-router.use(levelRouter);
-router.use(roomRouter)
-router.use('/items',itemRouter)
+router.use(auth, adminRouter);
+router.use(auth, authRouter);
+router.use(auth, mapRouter);
+router.use(auth, levelRouter);
+router.use(auth, roomRouter); 
+router.use('/items', auth, itemRouter);
 
 // * \\d+ est une regex qui va valider le type du paramètre :id, ce sera un nombre entier positif ou le router nous donnera un 404
 // router.get('/level/:id(\\d+)', homeController.getOneLevel);
