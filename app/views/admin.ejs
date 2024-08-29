@@ -32,7 +32,15 @@
                 <td><%= user.id %></td>
                 <td><%= user.firstname %> <%= user.lastname %></td>
                 <td><%= user.email %></td>
-                <td><%= user.role.name %></td>
+                <td>
+                    <form action="/users/updateRole/<%= user.id %>" method="POST" class="d-flex">
+                        <select name="role_id" class="form-select me-2" onchange="this.form.submit()">
+                            <% roles.forEach(role => { %>
+                                <option value="<%= role.id %>" <%= role.id === user.role.id ? 'selected' : '' %>><%= role.name %></option>
+                            <% }); %>
+                        </select>
+                    </form>
+                </td>
                 <td>
                     <ul class="list-unstyled">
                         <% user.role.permissions.forEach(permission => { %>

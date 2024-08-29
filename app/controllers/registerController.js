@@ -25,7 +25,7 @@ const registerController = {
             return res.render('register', { error: "L'email est incorrect" });
         }
 
-        if (password.length < 8 || confirmation.length < 8) {
+        if (password.length < 6 || confirmation.length < 6) {
             return res.render('register', {
                 error: "Le mot de passe n'est pas conforme",
                 notification
