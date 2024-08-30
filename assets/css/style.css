@@ -75,7 +75,8 @@ body {
 }
 
 .cell.selected {
-    border: 2px solid #ffcc00;
+    border-color: #ff9800; /* Couleur d'accentuation */
+    background-color: rgba(255, 152, 0, 0.3); /* Couleur de fond avec transparence */
 }
 .cell {
     border: 1px solid #ccc;
@@ -151,4 +152,45 @@ body {
     border: 1px solid #ccc;
     padding: 10px;
     min-height: 100px;
+}
+
+#delete-mode-button {
+    margin-bottom: 10px;
+}
+
+/* Style pour indiquer le mode actif */
+.active-mode {
+    background-color: rgba(0, 0, 0, 0.1);
+    border: 2px solid #000;
+}
+
+.mode-insert .container-fluid {
+    background-color: rgba(0, 123, 255, 0.1); /* Bleu clair pour le mode Insertion */
+}
+
+.mode-delete .container-fluid {
+    background-color: rgba(255, 0, 0, 0.1); /* Rouge clair pour le mode Suppression */
+}
+
+.mode-select .container-fluid {
+    background-color: rgba(0, 255, 0, 0.1); /* Vert clair pour le mode Sélection */
+}
+
+.banner {
+    text-align: center;
+    padding: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.banner-insert {
+    color: #007bff;
+}
+
+.banner-delete {
+    color: #dc3545;
+}
+
+.banner-select {
+    color: #28a745;
 }

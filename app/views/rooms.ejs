@@ -81,10 +81,20 @@
 
   <main class="container-fluid py-4">
     <div class="row">
+      <div class="banner" id="mode-banner"></div>
       <!-- Colonne gauche : Liste des items -->
-      <div class="col-md-2 bg-light p-3" id="item-list">
-        <h5>Liste des Items</h5>
-      </div>
+      <!-- Bouton pour activer/désactiver le mode suppression -->
+      <div class="col-md-2 bg-light p-3">
+        
+        <div class="d-flex gap-3 justify-content-center" style="height: 70px;">
+          <button id="toggle-delete-mode-button" class="btn btn-danger mb-3"> Suppression</button>
+          <button id="toggle-insert-mode-button" class="btn btn-primary mb-3"> Insertion</button>
+          <button id="toggle-select-mode-button" class="btn btn-secondary mb-3"> Sélection</button>
+        </div>
+        <div id="item-list">
+            <h5>Liste des Items</h5>
+        </div>
+    </div>
   
       <!-- Colonne centrale : Grille de la room -->
       <div class="col-md-8 d-flex justify-content-center">
@@ -99,10 +109,6 @@
       </div>
     </div>
   
-    <!-- Bouton pour activer/désactiver le mode suppression -->
-    <div class="text-center mt-3">
-      <button id="delete-mode-button" class="btn btn-danger">Activer le Mode Suppression</button>
-    </div>
   </main>
   
   <script type="module">

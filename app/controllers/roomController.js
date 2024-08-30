@@ -195,6 +195,36 @@ const roomController = {
         res.redirect('/levels');
     },
 
+    async saveCells(req, res) {
+        const cellsData = req.body;
+        
+        console.log('Données reçues par le serveur:', cellsData); // Ajoutez ce log
+        
+        if (!Array.isArray(cellsData)) {
+            return res.status(400).json({ error: 'Les données envoyées doivent être un tableau.' });
+        }
+    
+        try {
+            // Suppression des cellules existantes et insertion des nouvelles
+            for (let cellData of cellsData) {
+                await Cell.destroy({
+                    where: {
+                        room_id: cellData.room_id,
+                        pos_x: cellData.pos_x,
+                        pos_y: cellData.pos_y
+                    }
+                });
+                
+                await Cell.create(cellData);
+            }
+    
+            res.status(200).json({ message: 'Cellules sauvegardées avec succès' });
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde des cellules:', error);
+            res.status(500).json({ error: 'Erreur lors de la sauvegarde des cellules.' });
+        }
+    }
+    
     
 };
 

@@ -131,7 +131,8 @@ CREATE TABLE IF NOT EXISTS "cell" (
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ
 );
-
+ALTER TABLE "cell"
+ALTER COLUMN "room_id_link" DROP NOT NULL;
 -- Ajout des index pour optimiser les recherches
 CREATE INDEX idx_cell_room_id ON cell(room_id);
 CREATE INDEX idx_cell_room_id_link ON cell(room_id_link);

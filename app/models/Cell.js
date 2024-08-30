@@ -22,6 +22,7 @@ Cell.init(
         },
         room_id_link: {
             type: DataTypes.INTEGER,
+            allowNull: true, 
             references: {
                 model: 'Room',
                 key: 'id',

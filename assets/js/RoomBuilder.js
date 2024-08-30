@@ -1,6 +1,3 @@
-console.log("RoomBuilder.js");
-
-
 // Cette classe construit la pièce en créant et en disposant les cellules en fonction des données fournies par RoomGenerator.
 // Ces méthodes s'assurent que chaque cellule est correctement placée et initialisée, avec des items et des messages s'il y en a.
 // RoomBuilder est utilisé dans la classe RoomGenerator pour créer et initialiser une pièce.
@@ -47,136 +44,231 @@ console.log("RoomBuilder.js");
 // setupEventListeners : Configure les événements pour activer/désactiver le mode suppression.
 export class RoomBuilder {
     constructor(roomData, items) {
-        this.roomData = roomData; // Les données brutes pour générer la pièce
-        this.items = items; // Liste des items disponibles
-        this.cells = []; // Liste des cellules générées
-        this.selectedItem = null; // Item actuellement sélectionné pour le placement
-        this.isDeleteMode = false; // Mode suppression désactivé par défaut
+        this.roomData = roomData;
+        this.items = items;
+        this.cells = [];
+        this.selectedItem = null;
+        this.mode = 'select';
+        this.selectedCells = new Set();
+        this.isMouseDown = false;
+        this.isSaving = false; // Indicateur pour empêcher les sauvegardes répétées
     }
 
-    // Méthode pour initialiser la carte de la pièce
     initMap() {
-        console.log('items **********', this.items);
-        
         this.createCells();
         this.renderMap();
-        this.renderItemList(); // Afficher la liste des items disponibles
-        this.setupEventListeners(); // Mettre en place les écouteurs d'événements pour le mode suppression et sélection d'items
+        this.renderItemList();
+        this.setupEventListeners();
+        this.updateModeUI();
+
+        const mapContainer = document.getElementById("map-container");
+        mapContainer.addEventListener('mouseleave', () => this.onMouseUp());
     }
 
-    // Méthode pour créer les cellules en fonction des données de la pièce
     createCells() {
         const { nb_rows, nb_cols, cell_size } = this.roomData;
-        
-        
-
-        // Génération des cellules pour chaque position dans la grille
         for (let y = 0; y < nb_rows; y++) {
-            console.log('y', y);
-            
             for (let x = 0; x < nb_cols; x++) {
-                console.log('x', x);
                 const cell = {
                     x: x * cell_size,
                     y: y * cell_size,
                     posX: x,
                     posY: y,
-                    exists: false, // Par défaut, la cellule n'existe pas
-                    item: null, // Pas d'item au départ
-                    message: null // Pas de message au départ
+                    exists: false,
+                    item: null,
+                    message: null
                 };
-
-                // Vérification si une cellule existe à cette position
                 const existingCell = this.roomData.cells.find(c => c.pos_x === x && c.pos_y === y);
                 if (existingCell) {
                     cell.exists = true;
                     cell.item = existingCell.item_id;
                     cell.message = existingCell.message_id;
                 }
-
                 this.cells.push(cell);
             }
         }
     }
 
-    // Méthode pour afficher (ou rendre) la carte de la pièce
     renderMap() {
         const mapContainer = document.getElementById("map-container");
-        mapContainer.innerHTML = ""; // Vider le conteneur
-    
+        mapContainer.innerHTML = "";
+
+        mapContainer.style.display = "grid";
+        mapContainer.style.gridTemplateColumns = `repeat(${this.roomData.nb_cols}, ${this.roomData.cell_size}px)`;
+        mapContainer.style.gridTemplateRows = `repeat(${this.roomData.nb_rows}, ${this.roomData.cell_size}px)`;
+
         this.cells.forEach(cell => {
             const cellElement = document.createElement("div");
             cellElement.className = "cell";
-            
-            // Utilisation de grid pour gérer les positions
-            cellElement.style.gridColumnStart = cell.posX + 1; // +1 car CSS Grid commence à 1
-            cellElement.style.gridRowStart = cell.posY + 1;
             cellElement.style.width = `${this.roomData.cell_size}px`;
             cellElement.style.height = `${this.roomData.cell_size}px`;
             cellElement.style.boxSizing = "border-box";
             cellElement.style.border = "1px solid #ccc";
-    
+
             if (cell.exists) {
-                cellElement.style.backgroundColor = "#007bff"; // Couleur des cellules existantes
+                cellElement.style.backgroundColor = "#007bff";
                 if (cell.item) {
                     this.renderItemInCell(cellElement, cell.item);
                 }
             } else {
-                cellElement.style.backgroundColor = "#fff"; // Couleur des cases vides
+                cellElement.style.backgroundColor = "#fff"; 
             }
-    
+
             mapContainer.appendChild(cellElement);
+
+            cellElement.addEventListener('mousedown', () => this.onMouseDown(cell, cellElement));
+            cellElement.addEventListener('mouseover', () => this.onMouseOver(cell, cellElement));
+        });
+
+        document.addEventListener('mouseup', () => this.onMouseUp());
+    }
+
+    onMouseDown(cell, cellElement) {
+        this.isMouseDown = true;
+        this.handleCellInteraction(cell, cellElement);
+        cellElement.classList.add('hovered');
+    }
+
+    onMouseOver(cell, cellElement) {
+        if (!this.isMouseDown) return; 
+        this.handleCellInteraction(cell, cellElement);
+        cellElement.classList.add('hovered');
+    }
+
+    onMouseUp() {
+        this.isMouseDown = false;
+        this.clearHoveredCells();
+        this.saveSelectedCells(); 
+    }
+
+    clearHoveredCells() {
+        const hoveredCells = document.querySelectorAll('.cell.hovered');
+        hoveredCells.forEach(cell => cell.classList.remove('hovered'));
+    }
+
+    handleCellInteraction(cell, cellElement) {
+        const cellKey = `${cell.posX}-${cell.posY}`;
     
-            // Ajout d'un événement pour gérer le clic sur une cellule
-            cellElement.addEventListener('click', () => {
-                this.onCellClick(cell);
+        if (this.mode === 'select') {
+            this.selectCell(cell);
+            return;
+        }
+    
+        if (this.mode === 'insert' && this.selectedItem) {
+            this.placeItemInCell(cell, this.selectedItem.id);
+            this.selectedCells.add(cellKey);
+            cellElement.style.backgroundColor = "#007bff"; // Changement de couleur immédiat pour l'insertion
+        } else if (this.mode === 'delete' && cell.exists) {
+            this.deleteCell(cell);
+            this.selectedCells.add(cellKey);
+            cellElement.style.backgroundColor = "#fff"; // Changement de couleur immédiat pour la suppression
+        }
+    }
+
+    updateCellAppearance(cell, isSelected) {
+        const cellElement = document.querySelector(`.cell[style*="grid-column-start: ${cell.posX + 1};"][style*="grid-row-start: ${cell.posY + 1};"]`);
+        if (cellElement) {
+            if (cell.exists) {
+                cellElement.style.backgroundColor = "#007bff";
+                cellElement.innerHTML = "";
+                if (cell.item) {
+                    this.renderItemInCell(cellElement, cell.item);
+                }
+            } else {
+                cellElement.style.backgroundColor = "#fff"; 
+                cellElement.innerHTML = "";
+            }
+        }
+    }
+
+    async saveSelectedCells() {
+        // Ajouter une condition pour vérifier s'il y a des cellules sélectionnées et si une sauvegarde n'est pas déjà en cours
+        if (this.selectedCells.size === 0 || this.isSaving) {
+            console.warn('Aucune cellule sélectionnée pour la sauvegarde ou sauvegarde déjà en cours.');
+            return;
+        }
+
+        this.isSaving = true; // Empêche les sauvegardes répétées
+
+        const cellsData = Array.from(this.selectedCells).map(key => {
+            const [posX, posY] = key.split('-').map(Number);
+            const cell = this.cells.find(c => c.posX === posX && c.posY === posY);
+
+            return {
+                room_id: this.roomData.id,
+                pos_x: cell.posX,
+                pos_y: cell.posY,
+                item_id: cell.exists ? cell.item : null,
+                message_id: cell.exists ? cell.message : null
+            };
+        });
+
+        try {
+            const response = await fetch('/rooms/save-cells', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(cellsData),
             });
+
+            if (!response.ok) {
+                const errorMessage = await response.text();
+                throw new Error(`Erreur lors de la sauvegarde des cellules: ${errorMessage}`);
+            }
+
+            console.log('Les cellules ont été sauvegardées avec succès.');
+            this.selectedCells.clear();
+            this.updateCellsAfterSave(cellsData);
+            this.renderMap();
+        } catch (error) {
+            console.error('Erreur:', error);
+        } finally {
+            this.isSaving = false; // Réinitialise l'indicateur de sauvegarde
+        }
+    }
+
+    updateCellsAfterSave(cellsData) {
+        cellsData.forEach(data => {
+            const cell = this.cells.find(c => c.posX === data.pos_x && c.posY === data.pos_y);
+            if (cell) {
+                cell.exists = data.item_id !== null;
+                cell.item = data.item_id;
+                cell.message = data.message_id;
+            }
         });
     }
 
-    // Méthode déclenchée lors du clic sur une cellule
-    onCellClick(cell) {
-        if (this.isDeleteMode) {
-            if (cell.exists) {
-                this.deleteCell(cell);
-            }
-        } else if (this.selectedItem) {
-            this.placeItemInCell(cell, this.selectedItem.id);
-        } else {
-            this.selectCell(cell);
-        }
-    }
-
-    // Méthode pour sélectionner une cellule et afficher son contenu
     selectCell(cell) {
-        console.log(`Cellule sélectionnée (${cell.posX}, ${cell.posY})`);
+        console.log(`Sélection de la cellule : (${cell.posX}, ${cell.posY})`);
+        this.showCellDetails(cell);
         if (cell.exists && cell.item) {
-            const item = this.items.find(item => item.id === cell.item);
-            this.highlightSelectedItem(item);
-            this.showCellDetails(cell);
-        } else {
-            console.log("Cellule vide.");
+            this.highlightSelectedItem(this.items.find(item => item.id === cell.item));
         }
     }
 
-    // Méthode pour afficher un item dans une cellule spécifique
+    showCellDetails(cell) {
+        const detailsContainer = document.getElementById("cell-details");
+        detailsContainer.innerHTML = `
+            <p>Position: (${cell.posX}, ${cell.posY})</p>
+            <p>Item ID: ${cell.item || "Aucun"}</p>
+            <p>Message ID: ${cell.message || "Aucun"}</p>
+        `;
+    }
+
     placeItemInCell(cell, itemId) {
-        if (!cell.exists) {
-            cell.exists = true;
-        }
+        cell.exists = true;
         cell.item = itemId;
-        this.renderMap(); // Re-rendre la carte pour afficher l'item
+        this.updateCellAppearance(cell, false);
     }
 
-    // Méthode pour supprimer une cellule
     deleteCell(cell) {
         cell.exists = false;
         cell.item = null;
         cell.message = null;
-        this.renderMap(); // Re-rendre la carte pour enlever la cellule
+        this.updateCellAppearance(cell, false);
     }
 
-    // Méthode pour rendre un item dans une cellule (visuellement)
     renderItemInCell(cellElement, itemId) {
         const item = this.items.find(item => item.id === itemId);
         if (item) {
@@ -184,26 +276,23 @@ export class RoomBuilder {
             itemElement.src = item.img;
             itemElement.alt = item.name;
             itemElement.title = item.description;
-            itemElement.style.position = "relative"; // Position relative pour une meilleure intégration
+            itemElement.style.position = "relative";
             itemElement.style.width = "100%";
             itemElement.style.height = "100%";
+            itemElement.draggable = false;
             cellElement.appendChild(itemElement);
         } else {
             console.error(`Item avec ID ${itemId} non trouvé.`);
         }
     }
 
-    // Méthode pour rendre la liste des items disponibles à gauche
     renderItemList() {
         const itemListContainer = document.getElementById("item-list");
-        itemListContainer.innerHTML = ""; // Vider le conteneur
-        console.log('Rendering item list...', this.items);
-        
+        itemListContainer.innerHTML = "";
         this.items.forEach(item => {
             const itemElement = document.createElement("div");
-            itemElement.className = "item d-flex align-items-start mb-2"; // Bootstrap classes for layout
-    
-            // Ajout d'une image, nom et description tronquée
+            itemElement.className = "item d-flex align-items-start mb-2";
+
             itemElement.innerHTML = `
                 <img src="${item.img}" alt="${item.name}" title="${item.description}" class="item-thumbnail me-2" />
                 <div class="item-details">
@@ -211,22 +300,22 @@ export class RoomBuilder {
                     <p class="item-description text-muted mb-0">${this.truncateText(item.description, 40)}</p>
                 </div>
             `;
-            
+
             itemElement.addEventListener('click', () => {
                 this.selectedItem = item;
                 console.log(`Item sélectionné: ${item.name}`);
             });
-    
+
+            itemElement.querySelector("img").draggable = false;
+
             itemListContainer.appendChild(itemElement);
         });
     }
-    
-    // Méthode pour tronquer la description
+
     truncateText(text, maxLength) {
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
     }
 
-    // Méthode pour mettre en évidence l'item sélectionné dans la liste
     highlightSelectedItem(item) {
         const itemListContainer = document.getElementById("item-list");
         Array.from(itemListContainer.children).forEach(child => {
@@ -237,23 +326,59 @@ export class RoomBuilder {
         });
     }
 
-    // Méthode pour afficher les détails de la cellule à droite
-    showCellDetails(cell) {
-        const detailsContainer = document.getElementById("cell-details");
-        detailsContainer.innerHTML = `
-            <p>Position: (${cell.posX}, ${cell.posY})</p>
-            <p>Item ID: ${cell.item || "Aucun"}</p>
-            <p>Message ID: ${cell.message || "Aucun"}</p>
-        `;
+    setupEventListeners() {
+        const insertModeButton = document.getElementById("toggle-insert-mode-button");
+        const deleteModeButton = document.getElementById("toggle-delete-mode-button");
+        const selectModeButton = document.getElementById("toggle-select-mode-button");
+
+        insertModeButton.addEventListener('click', () => {
+            this.mode = 'insert';
+            this.updateModeButtons(insertModeButton, deleteModeButton, selectModeButton);
+            this.updateModeUI();
+        });
+
+        deleteModeButton.addEventListener('click', () => {
+            this.mode = 'delete';
+            this.updateModeButtons(insertModeButton, deleteModeButton, selectModeButton);
+            this.updateModeUI();
+        });
+
+        selectModeButton.addEventListener('click', () => {
+            this.mode = 'select';
+            this.updateModeButtons(insertModeButton, deleteModeButton, selectModeButton);
+            this.updateModeUI();
+        });
     }
 
-    // Méthode pour configurer les écouteurs d'événements
-    setupEventListeners() {
-        const deleteModeButton = document.getElementById("delete-mode-button");
-        deleteModeButton.addEventListener('click', () => {
-            this.isDeleteMode = !this.isDeleteMode;
-            deleteModeButton.classList.toggle("active", this.isDeleteMode);
-            console.log(`Mode suppression: ${this.isDeleteMode ? "Activé" : "Désactivé"}`);
-        });
+    updateModeButtons(insertButton, deleteButton, selectButton) {
+        insertButton.classList.toggle('active-mode', this.mode === 'insert');
+        deleteButton.classList.toggle('active-mode', this.mode === 'delete');
+        selectButton.classList.toggle('active-mode', this.mode === 'select');
+    }
+
+    updateModeUI() {
+        const banner = document.getElementById('mode-banner');
+        const body = document.querySelector('body');
+
+        body.classList.remove('mode-insert', 'mode-delete', 'mode-select');
+
+        switch (this.mode) {
+            case 'insert':
+                banner.textContent = "Mode Insertion Activé";
+                banner.className = "banner banner-insert";
+                body.classList.add('mode-insert');
+                break;
+            case 'delete':
+                banner.textContent = "Mode Suppression Activé";
+                banner.className = "banner banner-delete";
+                body.classList.add('mode-delete');
+                break;
+            case 'select':
+            default:
+                banner.textContent = "Mode Sélection Activé";
+                banner.className = "banner banner-select";
+                body.classList.add('mode-select');
+                break;
+        }
     }
 }
