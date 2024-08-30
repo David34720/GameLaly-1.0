@@ -79,28 +79,49 @@
     
   </form>
 
-  <!-- Div pour la génération de la map côté client -->
-  <div id="map-container" class="mt-4" style="width: 100%; height: calc(100vh - 150px); border: 1px solid #ccc;">
-    <!-- La map sera eee ici via du JavaScript -->
-  </div>
+  <main class="container-fluid py-4">
+    <div class="row">
+      <!-- Colonne gauche : Liste des items -->
+      <div class="col-md-2 bg-light p-3" id="item-list">
+        <h5>Liste des Items</h5>
+      </div>
   
-
-</main>
-<script type="module">
-  import { GameEngine } from '/js/GameEngine.js';
-
-  const room = <%- JSON.stringify(room) %>;
-  const cells = <%- JSON.stringify(cells) %>;
-  const itemsData = <%- JSON.stringify(itemsData) %>;
-
-  const gameConfig = {
+      <!-- Colonne centrale : Grille de la room -->
+      <div class="col-md-8 d-flex justify-content-center">
+        <div id="map-container" class="border" style="position: relative; width: fit-content;">
+          <!-- La map sera générée ici via du JavaScript -->
+        </div>
+      </div>
+  
+      <!-- Colonne droite : Détails de la cellule sélectionnée -->
+      <div class="col-md-2 bg-light p-3" id="cell-details">
+        <h5>Détails de la Cellule</h5>
+      </div>
+    </div>
+  
+    <!-- Bouton pour activer/désactiver le mode suppression -->
+    <div class="text-center mt-3">
+      <button id="delete-mode-button" class="btn btn-danger">Activer le Mode Suppression</button>
+    </div>
+  </main>
+  
+  <script type="module">
+    
+    const room = <%- JSON.stringify(room) %>;
+    const cells = <%- JSON.stringify(cells) %>;
+    const itemsData = <%- JSON.stringify(itemsData) %>;
+    console.log("room, cells, itemsData", room, cells, itemsData);
+    
+    const gameConfig = {
       initialRoomData: room,
       itemsData: itemsData,
-  };
-
-  const gameEngine = new GameEngine(gameConfig);
-  gameEngine.initializeGame();
-</script>
+    };
+    import { GameEngine } from '/js/GameEngine.js';
+  
+    const gameEngine = new GameEngine(gameConfig);
+    gameEngine.initializeGame();
+  </script>
+  
 
 
 

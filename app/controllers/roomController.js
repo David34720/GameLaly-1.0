@@ -63,6 +63,8 @@ const roomController = {
 
         const itemsData = await Item.findAll();
         
+        
+        
         const room = await Room.findByPk(id, {
             include: [{ model: Cell, as: 'cells' }] // Spécifiez l'alias correct ici
         });
@@ -78,7 +80,7 @@ const roomController = {
         const cells = room.cells;
         const notification = null;
 
-        res.render('rooms', { itemsData,room, cells, notification });
+        res.render('rooms', { itemsData, room, cells, notification });
     },
 
     async update(req, res) {

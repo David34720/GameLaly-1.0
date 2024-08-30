@@ -37,15 +37,16 @@ console.log("RoomGenerator.js");
 import { RoomBuilder } from './RoomBuilder.js';
 
 export class RoomGenerator {
-    constructor(roomData) {
+    constructor(roomData, itemsData) {
         this.roomData = roomData; // Données brutes pour générer la pièce
+        this.itemsData = itemsData; // Données brutes pour ajouter des items à la carte
         this.room = null; // Instance de RoomBuilder
     }
     // generateRoom(), this.room est mis à jour pour pointer vers un nouvel objet RoomBuilder qui est responsable de la génération et de la gestion des détails de la pièce. Cet objet est ensuite utilisé pour initier la carte de la pièce (initMap()) et d'autres actions.
     // this.room contient une référence à l'objet RoomBuilder, ce qui signifie que vous pouvez maintenant interagir avec cet objet pour effectuer des actions sur la pièce.
 
     generateRoom() {
-        this.room = new RoomBuilder(this.roomData);
+        this.room = new RoomBuilder(this.roomData, this.itemsData);
         this.room.initMap(); // Initialisation de la carte de la pièce
         return this.room;
     }

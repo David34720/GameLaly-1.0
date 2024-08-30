@@ -92,8 +92,9 @@ export class GameEngine {
 
     // Initialisation des pièces (rooms)
     initializeRooms() {
+        const itemsData = this.config.itemsData;
         const roomData = this.config.initialRoomData; // Récupération des données de la pièce initiale
-        const roomGenerator = new RoomGenerator(roomData); // Utilisation de RoomGenerator pour créer la pièce
+        const roomGenerator = new RoomGenerator(roomData, itemsData); // Utilisation de RoomGenerator pour créer la pièce
         this.currentRoom = roomGenerator.generateRoom();
         console.log("Pièce initialisée:", this.currentRoom);
     }

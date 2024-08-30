@@ -61,3 +61,94 @@ body {
 .bg-white-transparent {
     background-color: rgba(255, 255, 255, 0.65); /* blanc avec 80% d'opacité */
 }
+#map-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); /* Ajustez selon vos besoins */
+    grid-auto-rows: 30px; /* Ajustez selon vos besoins */
+    background-color: #f8f9fa;
+    border: 1px solid #ccc;
+}
+.grid-cell {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    position: relative;
+}
+
+.cell.selected {
+    border: 2px solid #ffcc00;
+}
+.cell {
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    background-color: #fff; /* Couleur de fond par défaut des cellules */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.selected-item {
+    border: 2px solid #007bff;
+}
+
+.item {
+    cursor: pointer;
+    display: flex;
+    align-items: start;
+    margin-bottom: 10px;
+    padding: 5px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    transition: background-color 0.3s;
+}
+
+.item:hover {
+    background-color: #e2e6ea;
+}
+
+
+.item-thumbnail {
+    width: 50px; /* Taille de la vignette */
+    height: 50px;
+    object-fit: cover; /* Assurez-vous que l'image s'adapte bien */
+    border-radius: 3px;
+}
+
+.item-details {
+    flex-grow: 1;
+}
+
+.item-name {
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.item-description {
+    font-size: 0.75rem;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px; /* Ajustez selon vos besoins */
+}
+
+#cell-details {
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+}
+
+#item-list, #item-details {
+    height: calc(100vh - 150px);
+    overflow-y: auto;
+}
+#items .list-group-item {
+    cursor: pointer;
+}
+
+#selected-item-details {
+    border: 1px solid #ccc;
+    padding: 10px;
+    min-height: 100px;
+}
