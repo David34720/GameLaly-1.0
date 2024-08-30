@@ -48,10 +48,13 @@ export class RoomBuilder {
         this.items = items;
         this.cells = [];
         this.selectedItem = null;
-        this.mode = 'select';
+        this.mode = 'select'; // Mode initial
+        this.previousMode = this.mode; // Stocker le mode précédent
         this.selectedCells = new Set();
         this.isMouseDown = false;
         this.isSaving = false; // Indicateur pour empêcher les sauvegardes répétées
+        this.isPanning = false; // Nouveau flag pour le mode "pan"
+        this.startPanPosition = { x: 0, y: 0 }; // Pour stocker la position initiale de la souris
     }
 
     initMap() {
@@ -63,6 +66,12 @@ export class RoomBuilder {
 
         const mapContainer = document.getElementById("map-container");
         mapContainer.addEventListener('mouseleave', () => this.onMouseUp());
+
+        // Centrer la vue sur la cellule de départ
+        this.centerMapOnStart();
+
+        // Activer le mode "pan" au clic sur la barre d'espace
+        this.setupPanMode();
     }
 
     createCells() {
@@ -123,6 +132,85 @@ export class RoomBuilder {
         document.addEventListener('mouseup', () => this.onMouseUp());
     }
 
+    centerMapOnStart() {
+        const { start_x, start_y, cell_size } = this.roomData;
+        const mapContainer = document.getElementById("map-container");
+
+        // Calculer la position centrale en fonction du start_x et start_y
+        const centerX = start_x * cell_size - (mapContainer.clientWidth / 2) + (cell_size / 2);
+        const centerY = start_y * cell_size - (mapContainer.clientHeight / 2) + (cell_size / 2);
+
+        // Appliquer le défilement
+        mapContainer.scrollTo({
+            left: Math.max(centerX, 0), // Pour éviter de scroller en dehors des limites à gauche
+            top: Math.max(centerY, 0),  // Pour éviter de scroller en dehors des limites en haut
+            behavior: 'smooth' // Pour un défilement doux
+        });
+    }
+
+    setupPanMode() {
+        document.addEventListener('keydown', (event) => {
+            // Utiliser la touche Shift pour activer le mode pan
+            if (event.key === 'Shift' && !this.isPanning) {
+                this.isPanning = true;
+                this.previousMode = this.mode; // Sauvegarder le mode précédent
+                this.mode = 'pan'; // Basculer en mode "pan"
+                document.body.style.cursor = 'grab'; // Changer le curseur en "main"
+            }
+        });
+    
+        document.addEventListener('keyup', (event) => {
+            if (event.key === 'Shift' && this.isPanning) {
+                this.isPanning = false;
+                this.mode = this.previousMode; // Restaurer le mode précédent
+                document.body.style.cursor = 'default'; // Réinitialiser le curseur
+            }
+        });
+    
+        const mapContainer = document.getElementById("map-container");
+    
+        mapContainer.addEventListener('mousedown', (event) => {
+            if (this.isPanning) {
+                this.isMouseDown = true;
+                this.startPanPosition = {
+                    x: event.clientX,
+                    y: event.clientY
+                };
+                document.body.style.cursor = 'grabbing'; // Changer le curseur en "main en action"
+            }
+        });
+    
+        mapContainer.addEventListener('mousemove', (event) => {
+            if (this.isMouseDown && this.isPanning) {
+                const dx = event.clientX - this.startPanPosition.x;
+                const dy = event.clientY - this.startPanPosition.y;
+    
+                mapContainer.scrollLeft -= dx;
+                mapContainer.scrollTop -= dy;
+    
+                this.startPanPosition = {
+                    x: event.clientX,
+                    y: event.clientY
+                };
+            }
+        });
+    
+        mapContainer.addEventListener('mouseup', () => {
+            if (this.isPanning) {
+                this.isMouseDown = false;
+                document.body.style.cursor = 'grab'; // Revenir au curseur "main"
+            }
+        });
+    
+        mapContainer.addEventListener('mouseleave', () => {
+            if (this.isPanning) {
+                this.isMouseDown = false;
+                document.body.style.cursor = 'grab'; // Revenir au curseur "main"
+            }
+        });
+    }
+    
+
     onMouseDown(cell, cellElement) {
         this.isMouseDown = true;
         this.handleCellInteraction(cell, cellElement);
@@ -147,13 +235,18 @@ export class RoomBuilder {
     }
 
     handleCellInteraction(cell, cellElement) {
+        if (this.mode === 'pan') {
+            // Ne rien faire, le mode de défilement est actif
+            return;
+        }
+
         const cellKey = `${cell.posX}-${cell.posY}`;
-    
+
         if (this.mode === 'select') {
             this.selectCell(cell);
             return;
         }
-    
+
         if (this.mode === 'insert' && this.selectedItem) {
             this.placeItemInCell(cell, this.selectedItem.id);
             this.selectedCells.add(cellKey);
@@ -165,8 +258,38 @@ export class RoomBuilder {
         }
     }
 
-    updateCellAppearance(cell, isSelected) {
-        const cellElement = document.querySelector(`.cell[style*="grid-column-start: ${cell.posX + 1};"][style*="grid-row-start: ${cell.posY + 1};"]`);
+    selectCell(cell) {
+        console.log(`Sélection de la cellule : (${cell.posX}, ${cell.posY})`);
+        this.showCellDetails(cell);
+        if (cell.exists && cell.item) {
+            this.highlightSelectedItem(this.items.find(item => item.id === cell.item));
+        }
+    }
+
+    showCellDetails(cell) {
+        const detailsContainer = document.getElementById("cell-details");
+        detailsContainer.innerHTML = `
+            <p>Position: (${cell.posX}, ${cell.posY})</p>
+            <p>Item ID: ${cell.item || "Aucun"}</p>
+            <p>Message ID: ${cell.message || "Aucun"}</p>
+        `;
+    }
+
+    placeItemInCell(cell, itemId) {
+        cell.exists = true;
+        cell.item = itemId;
+        this.updateCellAppearance(cell, false);
+    }
+
+    deleteCell(cell) {
+        cell.exists = false;
+        cell.item = null;
+        cell.message = null;
+        this.updateCellAppearance(cell, false);
+    }
+
+    updateCellAppearance(cell) {
+        const cellElement = this.cells.find(c => c.posX === cell.posX && c.posY === cell.posY);
         if (cellElement) {
             if (cell.exists) {
                 cellElement.style.backgroundColor = "#007bff";
@@ -182,7 +305,6 @@ export class RoomBuilder {
     }
 
     async saveSelectedCells() {
-        // Ajouter une condition pour vérifier s'il y a des cellules sélectionnées et si une sauvegarde n'est pas déjà en cours
         if (this.selectedCells.size === 0 || this.isSaving) {
             console.warn('Aucune cellule sélectionnée pour la sauvegarde ou sauvegarde déjà en cours.');
             return;
@@ -237,36 +359,6 @@ export class RoomBuilder {
                 cell.message = data.message_id;
             }
         });
-    }
-
-    selectCell(cell) {
-        console.log(`Sélection de la cellule : (${cell.posX}, ${cell.posY})`);
-        this.showCellDetails(cell);
-        if (cell.exists && cell.item) {
-            this.highlightSelectedItem(this.items.find(item => item.id === cell.item));
-        }
-    }
-
-    showCellDetails(cell) {
-        const detailsContainer = document.getElementById("cell-details");
-        detailsContainer.innerHTML = `
-            <p>Position: (${cell.posX}, ${cell.posY})</p>
-            <p>Item ID: ${cell.item || "Aucun"}</p>
-            <p>Message ID: ${cell.message || "Aucun"}</p>
-        `;
-    }
-
-    placeItemInCell(cell, itemId) {
-        cell.exists = true;
-        cell.item = itemId;
-        this.updateCellAppearance(cell, false);
-    }
-
-    deleteCell(cell) {
-        cell.exists = false;
-        cell.item = null;
-        cell.message = null;
-        this.updateCellAppearance(cell, false);
     }
 
     renderItemInCell(cellElement, itemId) {
@@ -360,25 +452,30 @@ export class RoomBuilder {
         const banner = document.getElementById('mode-banner');
         const body = document.querySelector('body');
 
-        body.classList.remove('mode-insert', 'mode-delete', 'mode-select');
+        body.classList.remove('mode-insert', 'mode-delete', 'mode-select', 'mode-pan');
 
         switch (this.mode) {
-            case 'insert':
-                banner.textContent = "Mode Insertion Activé";
-                banner.className = "banner banner-insert";
-                body.classList.add('mode-insert');
-                break;
-            case 'delete':
-                banner.textContent = "Mode Suppression Activé";
-                banner.className = "banner banner-delete";
-                body.classList.add('mode-delete');
-                break;
-            case 'select':
-            default:
-                banner.textContent = "Mode Sélection Activé";
-                banner.className = "banner banner-select";
-                body.classList.add('mode-select');
-                break;
+        case 'insert':
+            banner.textContent = "Mode Insertion Activé";
+            banner.className = "banner banner-insert";
+            body.classList.add('mode-insert');
+            break;
+        case 'delete':
+            banner.textContent = "Mode Suppression Activé";
+            banner.className = "banner banner-delete";
+            body.classList.add('mode-delete');
+            break;
+        case 'pan':
+            banner.textContent = "Mode Défilement Activé";
+            banner.className = "banner banner-pan";
+            body.classList.add('mode-pan');
+            break;
+        case 'select':
+        default:
+            banner.textContent = "Mode Sélection Activé";
+            banner.className = "banner banner-select";
+            body.classList.add('mode-select');
+            break;
         }
     }
 }
