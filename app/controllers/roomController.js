@@ -1,4 +1,4 @@
-const { Room, Cell } = require('../models');
+const { Room, Cell, Item } = require('../models');
 
 const { sequelizeConnection } = require('../db/sequelize');
 const roomController = {
@@ -58,11 +58,27 @@ const roomController = {
     },
 
     async edit(req, res) {
-        const { id } = req.params;
-        const room = await Room.findByPk(id);
-        const notification =  null;
 
-        res.render('rooms', { room, notification });
+        const { id } = req.params;
+
+        const itemsData = await Item.findAll();
+        
+        const room = await Room.findByPk(id, {
+            include: [{ model: Cell, as: 'cells' }] // Spécifiez l'alias correct ici
+        });
+
+        if (!room) {
+            req.session.notification = {
+                message: 'Room not found',
+                level: 'danger',
+            };
+            return res.redirect('/rooms');
+        }
+
+        const cells = room.cells;
+        const notification = null;
+
+        res.render('rooms', { itemsData,room, cells, notification });
     },
 
     async update(req, res) {

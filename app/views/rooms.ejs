@@ -38,27 +38,27 @@
 
     <div class="half-col">
       <label for="cell_size" class="form-label">Cellules</label>
-      <input type="number" class="form-control" id="cell_size" name="cell_size" value="<%= room.cell_size %>" required>
+      <input type="number" class="form-control" id="cell_size" name="cell_size" value="<%= room.cell_size || '30' %>" required>
     </div>
 
     <div class="half-col">
       <label for="nb_rows" class="form-label">Lignes</label>
-      <input type="number" class="form-control" id="nb_rows" name="nb_rows" value="<%= room.nb_rows %>" required>
+      <input type="number" class="form-control" id="nb_rows" name="nb_rows" value="<%= room.nb_rows || '20' %>" required>
     </div>
 
     <div class="half-col">
       <label for="nb_cols" class="form-label">Colonnes</label>
-      <input type="number" class="form-control" id="nb_cols" name="nb_cols" value="<%= room.nb_cols %>" required>
+      <input type="number" class="form-control" id="nb_cols" name="nb_cols" value="<%= room.nb_cols || '20'%>" required>
     </div>
 
     <div class="half-col">
       <label for="start_x" class="form-label">Départ X</label>
-      <input type="number" class="form-control" id="start_x" name="start_x" value="<%= room.start_x %>" required>
+      <input type="number" class="form-control" id="start_x" name="start_x" value="<%= room.start_x || '0'%>" required>
     </div>
 
     <div class="half-col">
       <label for="start_y" class="form-label">Départ Y</label>
-      <input type="number" class="form-control" id="start_y" name="start_y" value="<%= room.start_y %>" required>
+      <input type="number" class="form-control" id="start_y" name="start_y" value="<%= room.start_y || '0'%>" required>
     </div>
 
     <div class="col-md-2">
@@ -68,7 +68,8 @@
 
     <div class="half-col" >
       <label for="color_bg" class="form-label">Couleur</label>
-      <input style="height: 36px" type="color" class="form-control" id="color_bg" name="color_bg" value="<%= room.color_bg %>">
+      <input style="height: 36px" type="color" class="form-control" id="color_bg" name="color_bg" value="<%= room.color_bg || '#ffffff' %>">
+
     </div>
 
 
@@ -80,11 +81,28 @@
 
   <!-- Div pour la génération de la map côté client -->
   <div id="map-container" class="mt-4" style="width: 100%; height: calc(100vh - 150px); border: 1px solid #ccc;">
-    <!-- La map sera générée ici via du JavaScript -->
+    <!-- La map sera eee ici via du JavaScript -->
   </div>
   
 
 </main>
+<script type="module">
+  import { GameEngine } from '/js/GameEngine.js';
+
+  const room = <%- JSON.stringify(room) %>;
+  const cells = <%- JSON.stringify(cells) %>;
+  const itemsData = <%- JSON.stringify(itemsData) %>;
+
+  const gameConfig = {
+      initialRoomData: room,
+      itemsData: itemsData,
+  };
+
+  const gameEngine = new GameEngine(gameConfig);
+  gameEngine.initializeGame();
+</script>
+
+
 
 <!--  Include footers here -->
 <%- include('partials/foot') %>
