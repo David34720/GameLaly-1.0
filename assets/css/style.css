@@ -185,6 +185,10 @@ body {
     border: 2px solid #000;
 }
 
+.mode-play .container-fluid {
+    background-color: rgba(0, 255, 60, 0.296); /* Bleu clair pour le mode Insertion */
+}
+
 .mode-insert .container-fluid {
     background-color: rgba(0, 123, 255, 0.1); /* Bleu clair pour le mode Insertion */
 }
@@ -204,6 +208,10 @@ body {
     font-weight: bold;
 }
 
+.banner-play {
+    color: #04ff00;
+}
+
 .banner-insert {
     color: #007bff;
 }
@@ -219,5 +227,18 @@ body {
     flex-basis: 30%; 
     white-space: nowrap; 
     overflow: hidden; 
+    text-overflow: ellipsis;
+}
+.mode-grab {
+    cursor: grab;
+}
+.mode-grab.grabbing {
+    cursor: grabbing;
+}
+
+.btn_state {
+    flex-basis: 100%;
+    white-space: nowrap;
+    overflow: hidden;
     text-overflow: ellipsis;
 }
