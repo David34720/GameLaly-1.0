@@ -1,7 +1,16 @@
+import { GameEngine } from './GameEngine.js';
+
 // Classe RoomBuilder pour générer et gérer l'affichage d'une pièce avec des cellules interactives.
 export class RoomBuilder {
     // Constructeur pour initialiser l'instance de RoomBuilder avec les données de la pièce (roomData) et la liste des items (items).
-    constructor(roomData, items) {
+    constructor(roomData, items, gameConfig) {
+        if (!roomData) {
+            throw new Error('roomData is required');
+        }
+        if (!items) {
+            throw new Error('items are required');
+        }
+    
         this.roomData = roomData; // Données sur la pièce, incluant le nombre de lignes, colonnes, etc.
         this.items = items; // Liste des items disponibles pour être placés dans les cellules
         this.cells = []; // Tableau pour stocker les cellules de la pièce
@@ -12,6 +21,9 @@ export class RoomBuilder {
         this.isSaving = false; // Indicateur pour empêcher les sauvegardes répétées
         this.previousMode = null; // stocker le mode précédent pour toggle touch shift et revenir en arrière au keyup
         this.playerPosition = { x: 0, y: 0 }; // Position du joueur (x, y) en pixels
+        // Initialisation du GameEngine
+        this.gameEngine = new GameEngine(gameConfig);
+        console.log("RoomBuilder initialized with:", roomData, items);
     }
 
     // initialise la postion du joueur au démarrage
@@ -86,11 +98,11 @@ export class RoomBuilder {
     renderMap() {
         const mapContainer = document.getElementById("map-container");
         mapContainer.innerHTML = ""; // Vide le conteneur pour le réinitialiser.
-
+    
         mapContainer.style.display = "grid";
         mapContainer.style.gridTemplateColumns = `repeat(${this.roomData.nb_cols}, ${this.roomData.cell_size}px)`; // Définit le nombre de colonnes et la taille des cellules.
         mapContainer.style.gridTemplateRows = `repeat(${this.roomData.nb_rows}, ${this.roomData.cell_size}px)`; // Définit le nombre de lignes et la taille des cellules.
-
+    
         this.cells.forEach(cell => {
             const cellElement = document.createElement("div"); // Crée un élément HTML pour chaque cellule.
             cellElement.className = "cell"; // Ajoute la classe CSS pour le style de la cellule.
@@ -98,25 +110,27 @@ export class RoomBuilder {
             cellElement.style.height = `${this.roomData.cell_size}px`; // Définit la hauteur de la cellule.
             cellElement.style.boxSizing = "border-box"; // Assure que le padding et la bordure sont inclus dans la taille totale.
             cellElement.style.border = "1px solid #ccc"; // Ajoute une bordure aux cellules.
-
+    
             if (cell.exists) {
                 cellElement.style.backgroundColor = "#007bff"; // Change la couleur de fond pour les cellules existantes.
                 if (cell.item) {
                     this.renderItemInCell(cellElement, cell.item); // Affiche l'item dans la cellule si elle en contient un.
+                    cellElement.style.border = "0px solid #ccc";
                 }
             } else {
                 cellElement.style.backgroundColor = "#fff"; // Couleur de fond pour les cellules vides.
             }
-
+    
             mapContainer.appendChild(cellElement); // Ajoute l'élément cellule au conteneur.
-
+    
             // Ajoute des événements pour gérer les interactions utilisateur (clics et survol).
             cellElement.addEventListener('mousedown', () => this.onMouseDown(cell, cellElement));
             cellElement.addEventListener('mouseover', () => this.onMouseOver(cell, cellElement));
         });
-
+    
         document.addEventListener('mouseup', () => this.onMouseUp()); // Ajoute un événement global pour gérer la fin du clic.
     }
+    
 
     // Gère le clic initial sur une cellule, en fonction du mode courant (sélection, insertion, suppression).
     onMouseDown(cell, cellElement) {
@@ -166,7 +180,8 @@ export class RoomBuilder {
     }
 
     // Met à jour l'apparence d'une cellule spécifique après modification (insertion ou suppression d'item).
-    updateCellAppearance(cell, isSelected) {
+    // Met à jour l'apparence d'une cellule spécifique après modification (insertion ou suppression d'item).
+    updateCellAppearance(cell) {
         const cellElement = document.querySelector(`.cell[style*="grid-column-start: ${cell.posX + 1};"][style*="grid-row-start: ${cell.posY + 1};"]`);
         if (cellElement) {
             if (cell.exists) {
@@ -182,19 +197,20 @@ export class RoomBuilder {
         }
     }
 
+
     // Sauvegarde les cellules sélectionnées dans la base de données en envoyant une requête au serveur.
     async saveSelectedCells() {
         if (this.selectedCells.size === 0 || this.isSaving) { // Vérifie si des cellules sont sélectionnées et qu'aucune sauvegarde n'est en cours.
-            console.warn('Aucune cellule sélectionnée pour la sauvegarde ou sauvegarde déjà en cours.');
+            console.warn('Aucune cellule sélectionnée pour la sauvegarde ou suppression ou sauvegarde déjà en cours.');
             return;
         }
-
+    
         this.isSaving = true; // Empêche les sauvegardes répétées.
-
+    
         const cellsData = Array.from(this.selectedCells).map(key => {
             const [posX, posY] = key.split('-').map(Number); // Récupère les coordonnées de la cellule à partir de la clé.
             const cell = this.cells.find(c => c.posX === posX && c.posY === posY); // Trouve la cellule correspondante.
-
+    
             return {
                 room_id: this.roomData.id, // Identifiant de la pièce.
                 pos_x: cell.posX, // Coordonnée X de la cellule.
@@ -203,24 +219,32 @@ export class RoomBuilder {
                 message_id: cell.exists ? cell.message : null // Identifiant du message (null si aucun).
             };
         });
-
+    
+        let url = '/rooms/save-cells'; // URL par défaut pour l'insertion
+        let method = 'POST'; // Méthode HTTP par défaut
+    
+        if (this.mode === 'delete') {
+            url = '/rooms/delete-cells'; // URL pour la suppression
+            method = 'DELETE'; // Méthode HTTP pour la suppression
+        }
+    
         try {
-            const response = await fetch('/rooms/save-cells', {
-                method: 'POST',
+            const response = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(cellsData), // Envoie les données des cellules sélectionnées au serveur.
             });
-
+    
             if (!response.ok) {
                 const errorMessage = await response.text();
-                throw new Error(`Erreur lors de la sauvegarde des cellules: ${errorMessage}`);
+                throw new Error(`Erreur lors de la ${this.mode === 'delete' ? 'suppression' : 'sauvegarde'} des cellules: ${errorMessage}`);
             }
-
-            console.log('Les cellules ont été sauvegardées avec succès.');
+    
+            console.log(`Les cellules ont été ${this.mode === 'delete' ? 'supprimées' : 'sauvegardées'} avec succès.`);
             this.selectedCells.clear(); // Réinitialise l'ensemble des cellules sélectionnées.
-            this.updateCellsAfterSave(cellsData); // Met à jour l'état des cellules après la sauvegarde.
+            this.updateCellsAfterSave(cellsData); // Met à jour l'état des cellules après la sauvegarde ou la suppression.
             this.renderMap(); // Réaffiche la carte avec les modifications.
         } catch (error) {
             console.error('Erreur:', error);
@@ -228,6 +252,7 @@ export class RoomBuilder {
             this.isSaving = false; // Réinitialise l'indicateur de sauvegarde.
         }
     }
+    
 
     // Met à jour les cellules après la sauvegarde pour refléter les modifications.
     updateCellsAfterSave(cellsData) {
@@ -269,11 +294,14 @@ export class RoomBuilder {
 
     // Supprime un item ou un message d'une cellule spécifique et met à jour son apparence.
     deleteCell(cell) {
+        console.log(`Deleting cell at (${cell.posX}, ${cell.posY})`);
         cell.exists = false; // Marque la cellule comme vide.
         cell.item = null; // Supprime l'item de la cellule.
         cell.message = null; // Supprime le message de la cellule.
-        this.updateCellAppearance(cell, false); // Met à jour l'apparence de la cellule.
+        this.updateCellAppearance(cell); // Met à jour l'apparence de la cellule.
+        console.log(`Cell exists status: ${cell.exists}`);
     }
+
 
     // Affiche un item dans une cellule spécifique en utilisant son élément HTML.
     renderItemInCell(cellElement, itemId) {
@@ -347,8 +375,15 @@ export class RoomBuilder {
         const selectModeButton = document.getElementById("toggle-select-mode-button");
         const mapContainer = document.getElementById("map-container");
     
-        playModeButton.addEventListener('click', () => {
+        playModeButton.addEventListener('click', async () => {
             this.changeMode('play');
+            
+            // Appeler initializeGame et attendre qu'il termine
+            try {
+                await this.gameEngine.initializeGame();
+            } catch (error) {
+                console.error("Erreur lors de l'initialisation du jeu:", error);
+            }
         });
 
         insertModeButton.addEventListener('click', () => {
@@ -423,6 +458,8 @@ export class RoomBuilder {
         this.mode = newMode;
         this.updateModeButtons();
         this.updateModeUI();
+    
+       
     }
 
     // Met à jour l'apparence des boutons de mode en fonction du mode actif

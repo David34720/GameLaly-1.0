@@ -39,6 +39,12 @@ User.init(
             allowNull: false,
         },
 
+        img: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+            defaultValue: 'default.png',
+        },
+
         password: {
             type: DataTypes.TEXT,
             allowNull: false,

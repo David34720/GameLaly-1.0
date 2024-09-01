@@ -45,11 +45,21 @@ export class RoomGenerator {
     // generateRoom(), this.room est mis à jour pour pointer vers un nouvel objet RoomBuilder qui est responsable de la génération et de la gestion des détails de la pièce. Cet objet est ensuite utilisé pour initier la carte de la pièce (initMap()) et d'autres actions.
     // this.room contient une référence à l'objet RoomBuilder, ce qui signifie que vous pouvez maintenant interagir avec cet objet pour effectuer des actions sur la pièce.
 
-    generateRoom() {
-        this.room = new RoomBuilder(this.roomData, this.itemsData);
-        this.room.initMap(); // Initialisation de la carte de la pièce
+    generateRoom(gameConfig) {
+        if (!this.roomData || !this.itemsData) {
+            throw new Error('Les données de la pièce ou les items sont manquants.');
+        }
+        try {
+            this.room = new RoomBuilder(this.roomData, this.itemsData, gameConfig);
+            this.room.initMap(); // Initialisation de la carte de la pièce
+            console.log("Room generated successfully:", this.room);
+        } catch (error) {
+            console.error("Erreur lors de la génération de la pièce:", error);
+            this.room = null; // Assurez-vous que room est null en cas d'erreur
+        }
         return this.room;
     }
+    
 
     // Définir les dimensions de la pièce
     setDimensions(nbRows, nbCols, cellSize) {
@@ -73,15 +83,14 @@ export class RoomGenerator {
     // Ajouter un item dans une cellule spécifique
     addItemToCell(itemId, posX, posY) {
         if (!this.room) {
-            throw new Error('Room has not been generated yet.');
+            throw new Error('La pièce n\'a pas encore été générée. Appelez generateRoom() en premier.');
         }
         this.room.addItemToCell(itemId, posX, posY);
     }
-
-    // Ajouter un message dans une cellule spécifique
+    
     addMessageToCell(messageId, posX, posY) {
         if (!this.room) {
-            throw new Error('Room has not been generated yet.');
+            throw new Error('La pièce n\'a pas encore été générée. Appelez generateRoom() en premier.');
         }
         this.room.addMessageToCell(messageId, posX, posY);
     }

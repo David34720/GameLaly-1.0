@@ -16,5 +16,6 @@ roomRouter.post('/rooms/delete/:id(\\d+)', catcher(roomController.destroy));
 
 // Route pour sauvegarder les cellules
 roomRouter.post('/rooms/save-cells', catcher(roomController.saveCells));
+roomRouter.delete('/rooms/delete-cells', catcher(roomController.deleteCells));
 
 module.exports = { roomRouter };

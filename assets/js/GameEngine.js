@@ -66,72 +66,116 @@ console.log("GameEngine.js");
 // Initialisation et démarrage du moteur de jeu
 // const gameEngine = new GameEngine(gameConfig);
 // gameEngine.initializeGame();
+// gameEngine.js
 import { RoomGenerator } from './RoomGenerator.js';
 import { ItemManager } from './ItemManager.js';
 
 export class GameEngine {
     constructor(config) {
-        this.config = config; // Configuration initiale du jeu (dimensions, niveaux, etc.)
-        this.currentRoom = null; // La pièce actuelle où se trouve le joueur
-        this.itemManager = null; // Le gestionnaire des items
-        this.player = null; // Le joueur
+        if (!config) {
+            throw new Error('GameEngine configuration is required.');
+        }
+        console.log('GameEngine config:', config);
+        this.config = config;
+        this.currentRoom = null;
+        this.itemManager = null;
+        this.player = null;
     }
 
-    // Initialisation du jeu
-    initializeGame() {
-        console.log("Initialisation du jeu...");
-
-        // Initialisation des composants du jeu
-        this.initializeRooms();
+    async initializeGame() {
+        await this.initializeRooms(); // Attendre que la salle soit complètement générée
         this.initializeItems();
         this.initializePlayer();
-
-        // Démarrer le jeu
         this.startGame();
     }
 
-    // Initialisation des pièces (rooms)
     initializeRooms() {
-        const itemsData = this.config.itemsData;
-        const roomData = this.config.initialRoomData; // Récupération des données de la pièce initiale
-        const roomGenerator = new RoomGenerator(roomData, itemsData); // Utilisation de RoomGenerator pour créer la pièce
-        this.currentRoom = roomGenerator.generateRoom();
-        console.log("Pièce initialisée:", this.currentRoom);
+        if (!this.config || !this.config.initialRoomData) {
+            throw new Error('Initial room data is missing in the configuration.');
+        }
+        console.log("Initial room data:", this.config.initialRoomData);
+        
+        const roomData = this.config.initialRoomData;
+        const itemsData = this.config.itemsData || [];
+        const roomGenerator = new RoomGenerator(roomData, itemsData);
+        
+        // Passez la configuration de GameEngine ici
+        this.currentRoom = roomGenerator.generateRoom(this.config);
     }
-
-    // Initialisation des items
+    
+    generateRoomAsync(roomGenerator) {
+        return new Promise((resolve, reject) => {
+            try {
+                const room = roomGenerator.generateRoom();
+                console.log("Room generated successfully:", room);
+                resolve(room);
+            } catch (error) {
+                console.error("Erreur lors de la génération de la salle:", error);
+                reject(error);
+            }
+        });
+    }
+    
     initializeItems() {
         const itemsData = this.config.itemsData;
         this.itemManager = new ItemManager(itemsData);
         this.itemManager.initializeItems();
-        console.log("Items initialisés:", this.itemManager.items);
     }
+    
 
-    // Initialisation du joueur
     initializePlayer() {
+        const playerData = this.config.playerData;
+        console.log("Initializing player with data:", playerData);
+    
         this.player = {
-            x: this.currentRoom.roomData.start_x,
-            y: this.currentRoom.roomData.start_y,
+            x: playerData.pos_x,
+            y: playerData.pos_y,
+            img: playerData.img || 'default-image.png', // Assurez-vous que l'image est définie
             life: 100,
             inventory: []
         };
-        console.log("Joueur initialisé:", this.player);
+    
+        if (!this.player.x || !this.player.y) {
+            console.error('Error: Player position is undefined or invalid', this.player);
+        }
+    
+        this.renderPlayer();
     }
 
-    // Méthode pour démarrer le jeu
     startGame() {
-        console.log("Démarrage du jeu...");
+        if (!this.currentRoom) {
+            console.error("Impossible de démarrer le jeu: la salle n'est pas encore prête.");
+            return;
+        }
+        console.log("Démarrage du jeu avec la salle:", this.currentRoom);
+        this.config.mode = 'play'; // Assurez-vous que le mode est défini sur "play"
         this.renderGame();
         this.bindEvents();
     }
-
-    // Liaison des événements (clavier, souris, etc.)
+    
     bindEvents() {
         document.addEventListener("keydown", (event) => this.handleKeydown(event));
+        console.log("Event listener for keydown attached"); // Ajout de ce log pour confirmer l'attachement
     }
 
-    // Gestion des touches clavier pour déplacer le joueur
     handleKeydown(event) {
+        // Vérifiez si le mode actuel est "play" avant de permettre le déplacement du joueur
+        if (this.config.mode !== 'play') {
+            return;
+        }
+        
+        // Empêche le comportement par défaut des touches fléchées
+        switch (event.key) {
+        case "ArrowUp":
+        case "ArrowDown":
+        case "ArrowLeft":
+        case "ArrowRight":
+            event.preventDefault(); // Empêche le défilement de la page
+            break;
+        default:
+            break;
+        }
+    
         switch (event.key) {
         case "ArrowUp":
             this.movePlayer(0, -1);
@@ -149,66 +193,60 @@ export class GameEngine {
             break;
         }
     }
+    
 
-    // Déplacer le joueur dans la pièce
     movePlayer(deltaX, deltaY) {
         const newX = this.player.x + deltaX;
         const newY = this.player.y + deltaY;
 
         if (this.isPositionValid(newX, newY)) {
+            this.clearCell(this.player.x, this.player.y); // Restaurer la cellule à son état initial
             this.player.x = newX;
             this.player.y = newY;
-            console.log(`Joueur déplacé à (${this.player.x}, ${this.player.y})`);
-            this.checkForItems();
-            this.renderGame();
+            this.renderPlayer();
         } else {
             console.log("Mouvement invalide");
         }
     }
 
-    // Vérifie si la position du joueur est valide (dans les limites de la pièce)
     isPositionValid(x, y) {
         return x >= 0 && x < this.currentRoom.roomData.nb_cols &&
                y >= 0 && y < this.currentRoom.roomData.nb_rows;
     }
 
-    // Vérifie s'il y a des items à la position actuelle du joueur
-    checkForItems() {
-        const item = this.itemManager.items.find(item => 
-            item.position.x === this.player.x && item.position.y === this.player.y
-        );
-        if (item) {
-            console.log(`Item trouvé: ${item.name}`);
-            this.handleItemPickup(item);
-        }
+    clearCell(x, y) {
+        // Logique pour restaurer la cellule à son état initial après que le joueur l'a traversée
+        this.currentRoom.updateCellAppearance({
+            posX: x,
+            posY: y,
+            exists: false, // Ou remettre l'état initial
+            item: null,
+            message: null
+        });
     }
 
-    // Gère la collecte d'un item par le joueur
-    handleItemPickup(item) {
-        this.player.inventory.push(item);
-        console.log(`Item ajouté à l'inventaire: ${item.name}`);
-        this.itemManager.removeItem(item.id);
-        this.renderGame();
-    }
-
-    // Met à jour et rend la carte de jeu
     renderGame() {
-        console.log("Rendu du jeu...");
         this.currentRoom.renderMap();
         this.renderPlayer();
     }
 
-    // Rendre le joueur sur la carte
     renderPlayer() {
-        const playerElement = document.createElement("div");
-        playerElement.style.position = "absolute";
+        let playerElement = document.getElementById("player-element");
+        
+        if (!playerElement) {
+            playerElement = document.createElement("img");
+            playerElement.id = "player-element";
+            playerElement.src = `/img/items/${this.player.img}` || this.player.img;
+            playerElement.style.position = "absolute";
+            playerElement.style.width = `${this.currentRoom.roomData.cell_size}px`;
+            playerElement.style.height = `${this.currentRoom.roomData.cell_size}px`;
+    
+            const mapContainer = document.getElementById("map-container");
+            mapContainer.appendChild(playerElement);
+        }
+    
         playerElement.style.left = `${this.player.x * this.currentRoom.roomData.cell_size}px`;
         playerElement.style.top = `${this.player.y * this.currentRoom.roomData.cell_size}px`;
-        playerElement.style.width = `${this.currentRoom.roomData.cell_size}px`;
-        playerElement.style.height = `${this.currentRoom.roomData.cell_size}px`;
-        playerElement.style.backgroundColor = "#ff0000"; // Représente le joueur en rouge
-        document.getElementById("map-container").appendChild(playerElement);
     }
+    
 }
-
-

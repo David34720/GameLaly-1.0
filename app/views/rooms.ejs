@@ -101,7 +101,7 @@
   
       <!-- Colonne centrale : Grille de la room -->
       <div class="col-md-8 d-flex justify-content-center">
-        <div id="map-container" class="border" style="position: relative; width: fit-content;">
+        <div id="map-container" class="border" style="position: relative; width: fit-content;" tabindex="0">
           <!-- La map sera générée ici via du JavaScript -->
         </div>
       </div>
@@ -116,6 +116,7 @@
   
   <script type="module">
     
+    const playerData = <%- JSON.stringify(playerData) %>;
     const room = <%- JSON.stringify(room) %>;
     const cells = <%- JSON.stringify(cells) %>;
     const itemsData = <%- JSON.stringify(itemsData) %>;
@@ -124,6 +125,8 @@
     const gameConfig = {
       initialRoomData: room,
       itemsData: itemsData,
+      playerData: playerData,
+      cells: cells
     };
     import { GameEngine } from '/js/GameEngine.js';
   

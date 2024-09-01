@@ -1,4 +1,4 @@
-const { Room, Cell, Item } = require('../models');
+const { Room, Cell, Item, User } = require('../models');
 
 const { sequelizeConnection } = require('../db/sequelize');
 const roomController = {
@@ -58,17 +58,13 @@ const roomController = {
     },
 
     async edit(req, res) {
-
         const { id } = req.params;
-
+    
         const itemsData = await Item.findAll();
-        
-        
-        
         const room = await Room.findByPk(id, {
-            include: [{ model: Cell, as: 'cells' }] // Spécifiez l'alias correct ici
+            include: [{ model: Cell, as: 'cells' }]
         });
-
+    
         if (!room) {
             req.session.notification = {
                 message: 'Room not found',
@@ -76,12 +72,26 @@ const roomController = {
             };
             return res.redirect('/rooms');
         }
-
+    
+        console.log("USer session", req.session.user);
+    
+        const user = await User.findByPk(req.session.user.id); // Suppose que l'utilisateur est authentifié et son ID est stocké dans la session
+        const user
+        console.log("User data retrieved:", user ? user.toJSON() : "User not found");
+    
+        const playerData = {
+            pos_x: room.start_x,
+            pos_y: room.start_y,
+            img: user ? user.img : 'default-image.png' // Utilise l'image du joueur depuis la table User ou une image par défaut
+        };
+        console.log("Player Data:", playerData);
+    
         const cells = room.cells;
         const notification = null;
-
-        res.render('rooms', { itemsData, room, cells, notification });
+    
+        res.render('rooms', { itemsData, room, cells, notification, playerData });
     },
+    
 
     async update(req, res) {
         // Valider et extraire les champs du corps de la requête
@@ -223,7 +233,36 @@ const roomController = {
             console.error('Erreur lors de la sauvegarde des cellules:', error);
             res.status(500).json({ error: 'Erreur lors de la sauvegarde des cellules.' });
         }
+    },
+
+    async deleteCells(req, res) {
+        const cellsData = req.body;
+    
+        console.log('Données reçues par le serveur pour suppression:', cellsData); // Ajoutez ce log
+    
+        if (!Array.isArray(cellsData)) {
+            return res.status(400).json({ error: 'Les données envoyées doivent être un tableau.' });
+        }
+    
+        try {
+            // Suppression des cellules spécifiques
+            for (let cellData of cellsData) {
+                await Cell.destroy({
+                    where: {
+                        room_id: cellData.room_id,
+                        pos_x: cellData.pos_x,
+                        pos_y: cellData.pos_y
+                    }
+                });
+            }
+    
+            res.status(200).json({ message: 'Cellules supprimées avec succès' });
+        } catch (error) {
+            console.error('Erreur lors de la suppression des cellules:', error);
+            res.status(500).json({ error: 'Erreur lors de la suppression des cellules.' });
+        }
     }
+    
     
     
 };
