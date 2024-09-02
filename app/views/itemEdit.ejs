@@ -51,11 +51,12 @@
             <label class="form-label" for="context">Contexte</label>
             <textarea class="form-control" name="context" id="context" rows="3" placeholder="Contexte d'utilisation" required><%= item ? item.context : '' %></textarea>
         </div>
-        // case à chocher isObstacle boolean
+        
         <div class="mb-3">
             <label class="form-label" for="is_obstacle">Obstacle</label>
-            <input class="form-check-input" type="checkbox" name="is_obstacle" id="is_obstacle">
+            <input class="form-check-input" type="checkbox" name="is_obstacle" id="is_obstacle" <%= item && item.is_obstacle ? 'checked' : '' %> >
         </div>
+        
         
 
         <input class="btn btn-primary mt-3" type="submit" value="Mettre à jour l'Item">
