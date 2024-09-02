@@ -37,23 +37,26 @@ const itemController = {
         console.log(req.body); 
         console.log(req.file);  // Pour déboguer et voir les détails du fichier téléchargé
             
-        const { name, description, item_type, effect, life, value, context, is_obstacle } = req.body;
-
+        const { name, description, item_type, effect, life, value, context } = req.body;
+    
+        // Vérifier si la case à cocher est cochée
+        const is_obstacle = req.body.is_obstacle === 'on';
+    
         // Conversion des valeurs en nombres pour les champs numériques
         const itemTypeInt = parseInt(item_type, 10);
         const effectInt = parseInt(effect, 10);
         const lifeInt = parseInt(life, 10);
         const valueInt = parseInt(value, 10);
-
+    
         // Vérification des paramètres
-        if (!name || !description || !req.file || isNaN(itemTypeInt) || isNaN(effectInt) || isNaN(lifeInt) || isNaN(valueInt) || !context || !is_obstacle) {
+        if (!name || !description || !req.file || isNaN(itemTypeInt) || isNaN(effectInt) || isNaN(lifeInt) || isNaN(valueInt) || !context) {
             req.session.notification = {
                 message: "Tous les champs sont requis et doivent être valides.",
                 level: 'error'
             };
             return res.redirect('/items/add');  // Redirige vers le formulaire d'ajout avec un message d'erreur
         }
-
+    
         // Créer un nouvel item en utilisant le chemin de l'image téléchargée
         await Item.create({
             name,
@@ -64,20 +67,20 @@ const itemController = {
             life: lifeInt,
             value: valueInt,
             context,
-            is_obstacle,
+            is_obstacle,  // Sauvegarde de la valeur booléenne pour is_obstacle
             created_at: new Date(),
             updated_at: new Date(),
         });
-
+    
         req.session.notification = {
             message: `Item ${name} créé avec succès`,
             level: 'success',
         };
-
+    
         // Redirection vers la liste des items
         res.redirect('/items'); 
-        
     },
+    
      
     
     async edit(req, res) {
@@ -96,13 +99,16 @@ const itemController = {
         console.log(req.body); 
         console.log(req.file);
         const { id } = req.params;
-        const { name, description, item_type, effect, life, value, context, is_obstacle } = req.body;
-
+        const { name, description, item_type, effect, life, value, context } = req.body;
+    
+        // Récupérer la valeur de la case à cocher, en s'assurant que c'est un booléen
+        const is_obstacle = req.body.is_obstacle === 'on'; // Si coché, `is_obstacle` sera `true`, sinon `false`.
+    
         const itemTypeInt = parseInt(item_type, 10);
         const effectInt = parseInt(effect, 10);
         const lifeInt = parseInt(life, 10);
         const valueInt = parseInt(value, 10);
-
+    
         if (!name || !description || isNaN(itemTypeInt) || isNaN(effectInt) || isNaN(lifeInt) || isNaN(valueInt) || !context) {
             req.session.notification = {
                 message: "Tous les champs sont requis et doivent être valides.",
@@ -111,9 +117,9 @@ const itemController = {
             console.log("Tous les champs sont requis et doivent être valides.", req.body.name)
             return res.redirect(`/items/edit/${id}`);
         }
-
+    
         const item = await Item.findByPk(id);
-
+    
         if (!item) {
             req.session.notification = {
                 message: 'Item non trouvé',
@@ -121,13 +127,13 @@ const itemController = {
             };
             return res.redirect('/items');
         }
-
+    
         // Si un fichier est uploadé, on met à jour l'image
         let imgPath = item.img;
         if (req.file) {
             imgPath = `/img/items/${req.file.filename}`;
         }
-
+    
         await item.update({
             name,
             description,
@@ -137,17 +143,18 @@ const itemController = {
             life: lifeInt,
             value: valueInt,
             context,
-            is_obstacle,
+            is_obstacle, // Mettre à jour la valeur de `is_obstacle`
             updated_at: new Date(),
         });
-
+    
         req.session.notification = {
             message: `Item ${name} mis à jour avec succès`,
             level: 'success',
         };
-
+    
         res.redirect('/items');
     },
+    
 
     async duplicate(req, res) {
         const { id } = req.params;
