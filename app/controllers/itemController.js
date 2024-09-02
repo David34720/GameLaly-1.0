@@ -37,7 +37,7 @@ const itemController = {
         console.log(req.body); 
         console.log(req.file);  // Pour déboguer et voir les détails du fichier téléchargé
             
-        const { name, description, item_type, effect, life, value, context } = req.body;
+        const { name, description, item_type, effect, life, value, context, is_obstacle } = req.body;
 
         // Conversion des valeurs en nombres pour les champs numériques
         const itemTypeInt = parseInt(item_type, 10);
@@ -46,7 +46,7 @@ const itemController = {
         const valueInt = parseInt(value, 10);
 
         // Vérification des paramètres
-        if (!name || !description || !req.file || isNaN(itemTypeInt) || isNaN(effectInt) || isNaN(lifeInt) || isNaN(valueInt) || !context) {
+        if (!name || !description || !req.file || isNaN(itemTypeInt) || isNaN(effectInt) || isNaN(lifeInt) || isNaN(valueInt) || !context || !is_obstacle) {
             req.session.notification = {
                 message: "Tous les champs sont requis et doivent être valides.",
                 level: 'error'
@@ -64,6 +64,7 @@ const itemController = {
             life: lifeInt,
             value: valueInt,
             context,
+            is_obstacle,
             created_at: new Date(),
             updated_at: new Date(),
         });
@@ -95,7 +96,7 @@ const itemController = {
         console.log(req.body); 
         console.log(req.file);
         const { id } = req.params;
-        const { name, description, item_type, effect, life, value, context } = req.body;
+        const { name, description, item_type, effect, life, value, context, is_obstacle } = req.body;
 
         const itemTypeInt = parseInt(item_type, 10);
         const effectInt = parseInt(effect, 10);
@@ -136,6 +137,7 @@ const itemController = {
             life: lifeInt,
             value: valueInt,
             context,
+            is_obstacle,
             updated_at: new Date(),
         });
 
@@ -168,6 +170,7 @@ const itemController = {
             life: item.life,
             value: item.value,
             context: item.context,
+            is_obstacle: item.is_obstacle,
             created_at: new Date(),
             updated_at: new Date(),
         });

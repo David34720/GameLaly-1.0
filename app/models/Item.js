@@ -54,6 +54,12 @@ Item.init(
             allowNull: false,       
         },
         
+        is_obstacle: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,       
+        },
+        
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,

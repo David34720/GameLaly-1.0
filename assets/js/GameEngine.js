@@ -1,4 +1,4 @@
-console.log("GameEngine.js");
+
 
 
 // Modèle dédié à la logique de jeu en temps réel, le déplacement du joueur, interactions avec les items, et mises à jour de l'état du jeu.
@@ -75,7 +75,7 @@ export class GameEngine {
         if (!config) {
             throw new Error('GameEngine configuration is required.');
         }
-        console.log('GameEngine config:', config);
+        
         this.config = config;
         this.currentRoom = null;
         this.itemManager = null;
@@ -175,24 +175,79 @@ export class GameEngine {
         default:
             break;
         }
-    
+        
         switch (event.key) {
         case "ArrowUp":
+            this.updateSpritePosition(0, -1);
             this.movePlayer(0, -1);
             break;
         case "ArrowDown":
+            this.updateSpritePosition(0, 1);
             this.movePlayer(0, 1);
             break;
         case "ArrowLeft":
+            this.updateSpritePosition(-1, 0);
             this.movePlayer(-1, 0);
             break;
         case "ArrowRight":
+            this.updateSpritePosition(1, 0);
             this.movePlayer(1, 0);
             break;
         default:
             break;
         }
     }
+    
+    // Nouvelle fonction pour mettre à jour la position du sprite
+    updateSpritePosition(deltaX, deltaY) {
+        const playerElement = document.getElementById("player-element");
+        const cellWidth = this.config.initialRoomData.cell_size;
+        const spriteSize = 2000; // Taille totale du sprite en pixels
+        const spriteCount = 10; // Nombre de sprites dans le sprite sheet
+        const spriteWidth = spriteSize / spriteCount; // Largeur d'un sprite dans le sprite sheet
+        
+        // Assurez-vous que chaque sprite correspond à une cellule
+        playerElement.style.width = `${cellWidth}px`;
+        playerElement.style.height = `${cellWidth}px`;
+        
+        // Ajustez la taille du background pour qu'un sprite corresponde à une cellule
+        playerElement.style.backgroundSize = `${spriteCount * cellWidth}px auto`;
+        
+        // Logique pour déterminer quelle portion du sprite montrer en fonction de la direction
+        if (deltaX === 1) {
+            // Droite 
+            playerElement.style.backgroundPosition = `-${cellWidth * 1}px -${cellWidth * 1 + 2}px`; // Affiche la seconde figurine
+                
+            setTimeout(() => {
+                playerElement.style.backgroundPosition = `-${cellWidth * 7}px -4px`; // Affiche la seconde figurine
+            }, 200);
+
+        } else if (deltaX === -1) {
+            // Gauche
+
+            playerElement.style.backgroundPosition = `-${cellWidth * 1}px -${cellWidth * 1 +2 }px`; // Affiche la seconde figurine
+            setTimeout(() => {
+                playerElement.style.backgroundPosition = `-${cellWidth * 8}px -4px`; // Affiche la troisième figurine``
+            }, 200);
+
+        } else if (deltaY === -1) {
+            // Haut
+            playerElement.style.backgroundPosition = `-${cellWidth * 3}px -${cellWidth * 0 +2}px`; // Affiche la seconde figurine
+            setTimeout(() => {
+                playerElement.style.backgroundPosition = `-${cellWidth * 0}px -${cellWidth * 2.05}px`; // Affiche la première figurine
+                
+            }, 200);
+
+        } else if (deltaY === 1) {
+            // Bas
+            playerElement.style.backgroundPosition = `-${cellWidth * 1}px -${cellWidth * 0 +2}px`; // Affiche la seconde figurine
+            setTimeout(() => {
+                playerElement.style.backgroundPosition = `0 -4px`; // Affiche la quatrième figurine
+            }, 200);
+        }
+    }
+    
+    
     
 
     movePlayer(deltaX, deltaY) {
@@ -232,21 +287,35 @@ export class GameEngine {
 
     renderPlayer() {
         let playerElement = document.getElementById("player-element");
-        
+    
         if (!playerElement) {
-            playerElement = document.createElement("img");
+            playerElement = document.createElement("div");
             playerElement.id = "player-element";
-            playerElement.src = `/img/items/${this.player.img}` || this.player.img;
             playerElement.style.position = "absolute";
             playerElement.style.width = `${this.currentRoom.roomData.cell_size}px`;
             playerElement.style.height = `${this.currentRoom.roomData.cell_size}px`;
+    
+            // Appliquer l'image de fond
+            playerElement.style.backgroundImage = `url(/img/items/${this.player.img})`;
+    
+            // Ajuster la taille du sprite à la taille de la cellule
+            // Le sprite original fait 2000px de large pour 10 sprites, donc chaque sprite fait 200px de large.
+            // Nous devons redimensionner le sprite entier pour qu'il s'adapte à la cellule de 50px de large.
+            const scale = this.currentRoom.roomData.cell_size / 200; // 50/200 = 0.25
+            const newBackgroundSize = `${2000 * scale}px auto`; // Redimensionner la largeur totale
+            playerElement.style.backgroundSize = newBackgroundSize;
+    
+            // Positionner pour afficher le premier sprite (coin supérieur gauche)
+            playerElement.style.backgroundPosition = "0 0"; // Sélection de la première figurine
     
             const mapContainer = document.getElementById("map-container");
             mapContainer.appendChild(playerElement);
         }
     
+        // Mettre à jour la position du joueur
         playerElement.style.left = `${this.player.x * this.currentRoom.roomData.cell_size}px`;
         playerElement.style.top = `${this.player.y * this.currentRoom.roomData.cell_size}px`;
     }
+    
     
 }

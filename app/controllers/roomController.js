@@ -1,4 +1,4 @@
-const { Room, Cell, Item, User } = require('../models');
+const { Room, Cell, Item, User, Level } = require('../models');
 
 const { sequelizeConnection } = require('../db/sequelize');
 const roomController = {
@@ -76,7 +76,6 @@ const roomController = {
         console.log("USer session", req.session.user);
     
         const user = await User.findByPk(req.session.user.id); // Suppose que l'utilisateur est authentifié et son ID est stocké dans la session
-        const user
         console.log("User data retrieved:", user ? user.toJSON() : "User not found");
     
         const playerData = {

@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS "item" (
     "life" INTEGER,
     "value" INTEGER,
     "context" TEXT,
+    "is_obstacle" BOOLEAN NOT NULL DEFAULT FALSE,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ
 );
