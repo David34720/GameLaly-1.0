@@ -38,3 +38,82 @@ class CustomNotification {
 // setTimeout(() => {
 //     new CustomNotification('Bienvenue sur Laly\'s Game !', 'success', 5000);
 // }, 200);
+document.addEventListener("DOMContentLoaded", () => {
+    const modal = document.getElementById("myModal");
+    const span = document.getElementsByClassName("close")[0];
+    const characterSelection = document.querySelector(".character-selection");
+
+    // Ouvre la modale
+    window.openModal = function() {
+        // Faire une requête pour obtenir les personnages de type id9
+        fetch('/characters')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Vider le contenu actuel
+                    characterSelection.innerHTML = '';
+
+                    // Parcourir les personnages et les ajouter à la modale
+                    data.characters.forEach(character => {
+                        const characterCard = document.createElement('div');
+                        characterCard.classList.add('character-card');
+                        characterCard.setAttribute('data-img', character.img);
+
+                        characterCard.innerHTML = `
+                            <div class="character-image" style="background-image: url('${character.img}');"></div>
+                            <p>${character.name}</p>
+                            <p class="character-description">${character.context}</p>
+                        `;
+
+                        characterSelection.appendChild(characterCard);
+                    });
+
+                    // Afficher la modale
+                    modal.style.display = "block";
+                } else {
+                    alert('Erreur lors du chargement des personnages.');
+                }
+            })
+            .catch(error => console.error('Erreur:', error));
+    }
+
+    // Ferme la modale
+    span.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    // Gérer le clic sur les cartes de personnages
+    characterSelection.addEventListener('click', function(event) {
+        const target = event.target.closest('.character-card');
+        if (!target) return;
+
+        const selectedCharacter = target.getAttribute("data-img");
+
+        // Envoyer une requête pour mettre à jour le user.img (supposant que vous utilisez une API REST)
+        fetch('/update-user-img', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ img: selectedCharacter })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Personnage sélectionné avec succès !');
+                    modal.style.display = "none";
+                } else {
+                    alert('Erreur lors de la sélection du personnage.');
+                }
+            })
+            .catch(error => console.error('Erreur:', error));
+    });
+});
+
+

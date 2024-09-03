@@ -80,6 +80,8 @@ export class GameEngine {
         this.currentRoom = null;
         this.itemManager = null;
         this.player = null;
+        this.moveDelay = 200; // Délai en ms entre les mouvements
+        this.lastMoveTime = 0; // Dernière fois que le joueur s'est déplacé
     }
 
     async initializeGame() {
@@ -159,6 +161,15 @@ export class GameEngine {
     }
 
     handleKeydown(event) {
+        const currentTime = Date.now();
+        
+        if (currentTime - this.lastMoveTime < this.moveDelay) {
+            return; // Trop tôt pour un autre mouvement
+        }
+    
+        // Enregistre le temps du dernier mouvement
+        this.lastMoveTime = currentTime;
+    
         // Vérifiez si le mode actuel est "play" avant de permettre le déplacement du joueur
         if (this.config.mode !== 'play') {
             return;
@@ -178,19 +189,15 @@ export class GameEngine {
         
         switch (event.key) {
         case "ArrowUp":
-            this.updateSpritePosition(0, -1);
             this.movePlayer(0, -1);
             break;
         case "ArrowDown":
-            this.updateSpritePosition(0, 1);
             this.movePlayer(0, 1);
             break;
         case "ArrowLeft":
-            this.updateSpritePosition(-1, 0);
             this.movePlayer(-1, 0);
             break;
         case "ArrowRight":
-            this.updateSpritePosition(1, 0);
             this.movePlayer(1, 0);
             break;
         default:
@@ -198,71 +205,77 @@ export class GameEngine {
         }
     }
     
-    // Nouvelle fonction pour mettre à jour la position du sprite
-    updateSpritePosition(deltaX, deltaY) {
-        const playerElement = document.getElementById("player-element");
-        const cellWidth = this.config.initialRoomData.cell_size;
-        const spriteSize = 2000; // Taille totale du sprite en pixels
-        const spriteCount = 10; // Nombre de sprites dans le sprite sheet
-        const spriteWidth = spriteSize / spriteCount; // Largeur d'un sprite dans le sprite sheet
-        
-        // Assurez-vous que chaque sprite correspond à une cellule
-        playerElement.style.width = `${cellWidth}px`;
-        playerElement.style.height = `${cellWidth}px`;
-        
-        // Ajustez la taille du background pour qu'un sprite corresponde à une cellule
-        playerElement.style.backgroundSize = `${spriteCount * cellWidth}px auto`;
-        
-        // Logique pour déterminer quelle portion du sprite montrer en fonction de la direction
-        if (deltaX === 1) {
-            // Droite 
-            playerElement.style.backgroundPosition = `-${cellWidth * 1}px -${cellWidth * 1 + 2}px`; // Affiche la seconde figurine
-                
-            setTimeout(() => {
-                playerElement.style.backgroundPosition = `-${cellWidth * 7}px -4px`; // Affiche la seconde figurine
-            }, 200);
-
-        } else if (deltaX === -1) {
-            // Gauche
-
-            playerElement.style.backgroundPosition = `-${cellWidth * 1}px -${cellWidth * 1 +2 }px`; // Affiche la seconde figurine
-            setTimeout(() => {
-                playerElement.style.backgroundPosition = `-${cellWidth * 8}px -4px`; // Affiche la troisième figurine``
-            }, 200);
-
-        } else if (deltaY === -1) {
-            // Haut
-            playerElement.style.backgroundPosition = `-${cellWidth * 3}px -${cellWidth * 0 +2}px`; // Affiche la seconde figurine
-            setTimeout(() => {
-                playerElement.style.backgroundPosition = `-${cellWidth * 0}px -${cellWidth * 2.05}px`; // Affiche la première figurine
-                
-            }, 200);
-
-        } else if (deltaY === 1) {
-            // Bas
-            playerElement.style.backgroundPosition = `-${cellWidth * 1}px -${cellWidth * 0 +2}px`; // Affiche la seconde figurine
-            setTimeout(() => {
-                playerElement.style.backgroundPosition = `0 -4px`; // Affiche la quatrième figurine
-            }, 200);
-        }
-    }
-    
-    
-    
-
     movePlayer(deltaX, deltaY) {
         const newX = this.player.x + deltaX;
         const newY = this.player.y + deltaY;
-
+    
         if (this.isPositionValid(newX, newY)) {
             this.clearCell(this.player.x, this.player.y); // Restaurer la cellule à son état initial
-            this.player.x = newX;
-            this.player.y = newY;
-            this.renderPlayer();
+            this.updateSpritePosition(deltaX, deltaY, () => {
+                this.player.x = newX;
+                this.player.y = newY;
+                this.renderPlayer(); // Afficher le joueur à la nouvelle position
+            });
         } else {
             console.log("Mouvement invalide");
         }
     }
+    
+    updateSpritePosition(deltaX, deltaY, callback) {
+        const playerElement = document.getElementById("player-element");
+        const cellWidth = this.config.initialRoomData.cell_size;
+        const spriteCount = 2; // Nombre de sprites en largeur dans le sprite sheet
+    
+        playerElement.style.width = `${cellWidth}px`;
+        playerElement.style.height = `${cellWidth}px`;
+        playerElement.style.backgroundSize = `${spriteCount * cellWidth}px auto`;
+    
+        let offsetX = 0;
+        let offsetY = 0;
+    
+        if (deltaX === 1) {
+            // Droite
+            offsetX = cellWidth / 2;
+            playerElement.style.backgroundPosition = `-${cellWidth * 1}px -${cellWidth * 2}px`; 
+        } else if (deltaX === -1) {
+            // Gauche
+            offsetX = -cellWidth / 2;
+            playerElement.style.backgroundPosition = `-${cellWidth * 1}px -${cellWidth * 1}px`; 
+        } else if (deltaY === -1) {
+            // Haut
+            offsetY = -cellWidth / 2;
+            playerElement.style.backgroundPosition = `-${cellWidth * 1}px -${cellWidth * 3}px`; 
+        } else if (deltaY === 1) {
+            // Bas
+            offsetY = cellWidth / 2;
+            playerElement.style.backgroundPosition = `-${cellWidth * 1}px -${cellWidth * 0}px`; 
+        }
+    
+        // Déplacer l'élément de 50% de la largeur ou hauteur de la cellule
+        playerElement.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    
+        // Remettre le sprite à sa position finale après un court délai
+        setTimeout(() => {
+            playerElement.style.transform = 'translate(0, 0)';
+            
+            // Changer la frame pour la deuxième partie du mouvement
+            if (deltaX === 1) {
+                playerElement.style.backgroundPosition = `-${cellWidth * 0}px -${cellWidth * 2}px`; 
+            } else if (deltaX === -1) {
+                playerElement.style.backgroundPosition = `-${cellWidth * 0}px -${cellWidth * 1}px`; 
+            } else if (deltaY === -1) {
+                playerElement.style.backgroundPosition = `-${cellWidth * 0}px -${cellWidth * 3}px`; 
+            } else if (deltaY === 1) {
+                playerElement.style.backgroundPosition = `-${cellWidth * 0}px -${cellWidth * 0}px`; 
+            }
+    
+            // Appeler le callback pour mettre à jour la position réelle après l'animation
+            if (callback) {
+                callback();
+            }
+        }, this.moveDelay / 2); // Délai pour la transition intermédiaire
+    }
+    
 
     isPositionValid(x, y) {
         return x >= 0 && x < this.currentRoom.roomData.nb_cols &&
@@ -296,13 +309,13 @@ export class GameEngine {
             playerElement.style.height = `${this.currentRoom.roomData.cell_size}px`;
     
             // Appliquer l'image de fond
-            playerElement.style.backgroundImage = `url(/img/items/${this.player.img})`;
+            playerElement.style.backgroundImage = `url(${this.player.img})`;
     
             // Ajuster la taille du sprite à la taille de la cellule
             // Le sprite original fait 2000px de large pour 10 sprites, donc chaque sprite fait 200px de large.
             // Nous devons redimensionner le sprite entier pour qu'il s'adapte à la cellule de 50px de large.
-            const scale = this.currentRoom.roomData.cell_size / 200; // 50/200 = 0.25
-            const newBackgroundSize = `${2000 * scale}px auto`; // Redimensionner la largeur totale
+            const scale = this.currentRoom.roomData.cell_size / 50; // 50/200 = 0.25
+            const newBackgroundSize = `${100 * scale}px auto`; // Redimensionner la largeur totale
             playerElement.style.backgroundSize = newBackgroundSize;
     
             // Positionner pour afficher le premier sprite (coin supérieur gauche)

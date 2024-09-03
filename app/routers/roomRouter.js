@@ -18,4 +18,8 @@ roomRouter.post('/rooms/delete/:id(\\d+)', catcher(roomController.destroy));
 roomRouter.post('/rooms/save-cells', catcher(roomController.saveCells));
 roomRouter.delete('/rooms/delete-cells', catcher(roomController.deleteCells));
 
+// Route pour mettre à jour l'image du joueur
+roomRouter.post('/update-user-img', roomController.updateUserImg);
+roomRouter.get('/characters', roomController.getCharacterSelection);
+
 module.exports = { roomRouter };

@@ -242,3 +242,85 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* Style pour la modale */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+    padding-top: 60px;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    text-align: center;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Style pour la sélection de personnages */
+.character-selection {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.character-card {
+    margin: 10px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border 0.3s;
+    text-align: center; /* Centrer le texte */
+    width: 45%;
+}
+
+.character-card img {
+    max-width: 100px;
+    border-radius: 10px;
+}
+
+.character-card p {
+    margin-top: 5px;
+    
+}
+
+.character-card:hover {
+    border: 2px solid #333;
+}
+.character-image {
+    width: 100px; /* Largeur du conteneur */
+    height: 75px; /* Hauteur du conteneur */
+    background-position: 0 0; /* Position X: 0, Y: 0 */
+    background-size: 200%; /* Affiche 50% de la largeur et 25% de la hauteur */
+    background-repeat: no-repeat; /* Empêche la répétition de l'image */
+    border-radius: 10px; /* Pour arrondir les coins */
+}
+.character-description {
+    font-size: 0.8rem;
+    color: #333;
+    margin-top: 5px;
+}

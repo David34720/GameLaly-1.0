@@ -260,9 +260,31 @@ const roomController = {
             console.error('Erreur lors de la suppression des cellules:', error);
             res.status(500).json({ error: 'Erreur lors de la suppression des cellules.' });
         }
+    },
+
+    async updateUserImg(req, res) {
+        const { img } = req.body;
+        const userId = req.session.user.id;
+        console.log("User ID: " + userId + "Image: " + img);
+        await User.update({ img: img }, { where: { id: userId } });
+        res.json({ success: true });
+        
+    },
+    
+    async getCharacterSelection(req, res) {
+    
+        // Filtrer les items avec item_type = 9
+        const characters = await Item.findAll({
+            where: {
+                item_type: 9
+            }
+        });
+
+        // Retourner les données en JSON
+        res.json({ success: true, characters });
+        
+    
     }
-    
-    
     
 };
 
