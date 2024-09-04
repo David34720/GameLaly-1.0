@@ -51,6 +51,26 @@ Cell.init(
                 key: 'id',
             },
         },
+        width: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 1, // Nombre de cellules en largeur
+        },
+        height: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 1, // Nombre de cellules en hauteur
+        },
+        offset_x: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0, // Décalage en X dans la cellule
+        },
+        offset_y: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0, // Décalage en Y dans la cellule
+        },
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,

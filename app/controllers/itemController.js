@@ -41,6 +41,7 @@ const itemController = {
     
         // Vérifier si la case à cocher est cochée
         const is_obstacle = req.body.is_obstacle === 'on';
+        const is_object = req.body.is_object === 'on';
     
         // Conversion des valeurs en nombres pour les champs numériques
         const itemTypeInt = parseInt(item_type, 10);
@@ -68,6 +69,7 @@ const itemController = {
             value: valueInt,
             context,
             is_obstacle,  // Sauvegarde de la valeur booléenne pour is_obstacle
+            is_object,
             created_at: new Date(),
             updated_at: new Date(),
         });
@@ -103,6 +105,7 @@ const itemController = {
     
         // Récupérer la valeur de la case à cocher, en s'assurant que c'est un booléen
         const is_obstacle = req.body.is_obstacle === 'on'; // Si coché, `is_obstacle` sera `true`, sinon `false`.
+        const is_object = req.body.is_object === 'on';
     
         const itemTypeInt = parseInt(item_type, 10);
         const effectInt = parseInt(effect, 10);
@@ -144,6 +147,7 @@ const itemController = {
             value: valueInt,
             context,
             is_obstacle, // Mettre à jour la valeur de `is_obstacle`
+            is_object, // Mettre à jour la valeur de `is_object`
             updated_at: new Date(),
         });
     
@@ -178,6 +182,7 @@ const itemController = {
             value: item.value,
             context: item.context,
             is_obstacle: item.is_obstacle,
+            is_object: item.is_object,
             created_at: new Date(),
             updated_at: new Date(),
         });

@@ -1,27 +1,22 @@
-const { Room, Cell, Item, User, Level } = require('../models');
-
+const { Room, Cell, Item, User, Level, Message } = require('../models');
 const { sequelizeConnection } = require('../db/sequelize');
-const roomController = {
-    async index(req, res) { //route / (page index)
-        
-        const rooms = await Room.findAll();
-      
-        const notification = req.session.notification || null;
-        req.session.notification = null; 
 
+const roomController = {
+    async index(req, res) {
+        const rooms = await Room.findAll();
+        const notification = req.session.notification || null;
+        req.session.notification = null;
         res.render('rooms', { rooms, notification });
     },
-    
-    async add(req, res) { // route get map/add
-        const { map_id } = req.params;
 
-        console.log("route rooms/add", map_id);
+    async add(req, res) {
+        const { map_id } = req.params;
         let isFirst = true;
         const qtyRoomWithMapId = await Room.count({ where: { map_id: map_id } });
         if (qtyRoomWithMapId > 0) {
             isFirst = false;
         }
-        const room = await Room.create({ // route get/rooms/add/:map_id(\\d+)
+        const room = await Room.create({
             name: "Nouvelle pièce",
             description: "Description de la nouvelle carte",
             map_id: map_id,
@@ -36,35 +31,31 @@ const roomController = {
         });
 
         const notification = req.session.notification || null;
-        req.session.notification = null; 
-        
+        req.session.notification = null;
         res.render(`rooms`, { room, notification });
     },
-    async create(req, res) { // route post map/create
-        
+
+    async create(req, res) {
         req.session.notification = {
             message: 'Carte créée avec succès',
             level: 'success'
         };
-        await Map.create({ 
-            name: req.body.name, 
-            description: req.body.description, 
-            users_id: 1, 
-            level_id: 1}
-        );
-    
-
+        await Map.create({
+            name: req.body.name,
+            description: req.body.description,
+            users_id: 1,
+            level_id: 1
+        });
         res.redirect('/map/add');
     },
 
     async edit(req, res) {
         const { id } = req.params;
-    
         const itemsData = await Item.findAll();
         const room = await Room.findByPk(id, {
             include: [{ model: Cell, as: 'cells' }]
         });
-    
+
         if (!room) {
             req.session.notification = {
                 message: 'Room not found',
@@ -72,28 +63,20 @@ const roomController = {
             };
             return res.redirect('/rooms');
         }
-    
-        console.log("USer session", req.session.user);
-    
-        const user = await User.findByPk(req.session.user.id); // Suppose que l'utilisateur est authentifié et son ID est stocké dans la session
-        console.log("User data retrieved:", user ? user.toJSON() : "User not found");
-    
+
+        const user = await User.findByPk(req.session.user.id);
         const playerData = {
             pos_x: room.start_x,
             pos_y: room.start_y,
-            img: user ? user.img : 'default-image.png' // Utilise l'image du joueur depuis la table User ou une image par défaut
+            img: user ? user.img : 'default-image.png'
         };
-        console.log("Player Data:", playerData);
-    
+
         const cells = room.cells;
         const notification = null;
-    
         res.render('rooms', { itemsData, room, cells, notification, playerData });
     },
-    
 
     async update(req, res) {
-        // Valider et extraire les champs du corps de la requête
         const { 
             name, 
             description,
@@ -107,33 +90,31 @@ const roomController = {
             img_bg,
             color_bg
         } = req.body;
-    
+
         const { id } = req.params;
-    
+
         req.session.notification = {
             message: 'Room modifiée avec succès',
             level: 'success'
         };
-    
-        // Mise à jour de la room
-        const updatedRoom = await Room.update({ 
-            name, 
-            description, 
+
+        await Room.update({
+            name,
+            description,
             map_id,
             first_room,
             cell_size,
             nb_rows,
-            nb_cols,  
+            nb_cols,
             start_x,
             start_y,
             img_bg,
             color_bg,
-            updated_at: new Date()             
-        }, { 
+            updated_at: new Date()
+        }, {
             where: { id }
         });
-    
-        console.log("Updated Room : ", updatedRoom[0]);
+
         res.redirect('/rooms/edit/' + id);
     },
 
@@ -141,7 +122,7 @@ const roomController = {
         const { id } = req.params;
         const room = await Room.findByPk(id);
 
-        const newRoom = await Room.create({ 
+        const newRoom = await Room.create({
             name: room.name + " - Copie",
             description: room.description,
             map_id: room.map_id,
@@ -159,28 +140,19 @@ const roomController = {
 
     async destroy(req, res) {
         const { id } = req.params;
-    
         const transaction = await sequelizeConnection().transaction();
-    
+
         try {
-            // 1. Supprimer toutes les cellules où room_id_link pointe vers la Room à supprimer
             await Cell.destroy({ where: { room_id_link: id }, transaction });
-    
-            // 2. Supprimer toutes les cellules liées à la Room via room_id
             await Cell.destroy({ where: { room_id: id }, transaction });
-    
-            // 3. Supprimer la Room elle-même
             await Room.destroy({ where: { id: id }, transaction });
-    
-            // 4. Valider la transaction
             await transaction.commit();
-    
+
             req.session.notification = {
                 message: 'Room supprimée avec succès',
                 level: 'success'
             };
         } catch (error) {
-            // 5. Annuler la transaction en cas d'erreur
             await transaction.rollback();
             console.error('Failed to delete room:', error);
             req.session.notification = {
@@ -188,34 +160,26 @@ const roomController = {
                 level: 'danger'
             };
         }
-    
+
         res.redirect('/map/add');
     },
-    
-
-
 
     async store(req, res) {
-        // ! On devrait valider name, on ne sert jamais d'une donnée qui vient d'un client sans la valider
         const { name } = req.body;
-
         await Level.create({ name: name });
-
         res.redirect('/levels');
     },
 
     async saveCells(req, res) {
         const cellsData = req.body;
-        
-        console.log('Données reçues par le serveur:', cellsData); // Ajoutez ce log
-        
+
         if (!Array.isArray(cellsData)) {
             return res.status(400).json({ error: 'Les données envoyées doivent être un tableau.' });
         }
-    
+
         try {
-            // Suppression des cellules existantes et insertion des nouvelles
             for (let cellData of cellsData) {
+                // Suppression des cellules existantes avant d'insérer les nouvelles
                 await Cell.destroy({
                     where: {
                         room_id: cellData.room_id,
@@ -223,10 +187,20 @@ const roomController = {
                         pos_y: cellData.pos_y
                     }
                 });
-                
-                await Cell.create(cellData);
+
+                // Insertion des nouvelles cellules avec gestion des objets plus grands (width, height)
+                await Cell.create({
+                    room_id: cellData.room_id,
+                    pos_x: cellData.pos_x,
+                    pos_y: cellData.pos_y,
+                    item_id: cellData.item_id,
+                    width: cellData.width || 1,  // Largeur par défaut à 1
+                    height: cellData.height || 1,  // Hauteur par défaut à 1
+                    offset_x: cellData.offset_x || 0,
+                    offset_y: cellData.offset_y || 0
+                });
             }
-    
+
             res.status(200).json({ message: 'Cellules sauvegardées avec succès' });
         } catch (error) {
             console.error('Erreur lors de la sauvegarde des cellules:', error);
@@ -234,17 +208,73 @@ const roomController = {
         }
     },
 
+    // Méthode pour mettre à jour une cellule, incluant la gestion de la largeur et de la hauteur
+    async updateCell(req, res) {
+        const { room_id, pos_x, pos_y, item_id, message_id, message, width, height, offset_x, offset_y } = req.body;
+
+        try {
+            // Recherche de la cellule par room_id, pos_x et pos_y
+            const cell = await Cell.findOne({
+                where: { room_id, pos_x, pos_y }
+            });
+
+            if (!cell) {
+                return res.status(404).json({ error: 'Cellule non trouvée' });
+            }
+
+            // Gestion de la création ou de la mise à jour des messages
+            let newMessageId = message_id;
+            if (message) {
+                if (message_id) {
+                    // Mise à jour du message existant
+                    const existingMessage = await Message.findByPk(message_id);
+                    if (existingMessage) {
+                        await existingMessage.update({ text: message });
+                    }
+                } else {
+                    // Création d'un nouveau message
+                    const newMessage = await Message.create({ room_id, text: message });
+                    newMessageId = newMessage.id;
+                }
+            }
+
+            // Mise à jour de la cellule, incluant la largeur et la hauteur
+            await cell.update({
+                item_id: item_id || null,
+                message_id: newMessageId || null,
+                width: width || 1,
+                height: height || 1,
+                offset_x: offset_x || 0,
+                offset_y: offset_y || 0
+            });
+
+            // Renvoi de la cellule complète après mise à jour
+            return res.status(200).json({
+                pos_x: cell.pos_x,
+                pos_y: cell.pos_y,
+                item_id: cell.item_id,
+                message_id: newMessageId,
+                exists: true,
+                width: cell.width,
+                height: cell.height,
+                offset_x: cell.offset_x,
+                offset_y: cell.offset_y
+            });
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de la cellule:', error);
+            res.status(500).json({ error: 'Erreur lors de la mise à jour de la cellule.' });
+        }
+    },
+    
+
     async deleteCells(req, res) {
         const cellsData = req.body;
-    
-        console.log('Données reçues par le serveur pour suppression:', cellsData); // Ajoutez ce log
-    
+
         if (!Array.isArray(cellsData)) {
             return res.status(400).json({ error: 'Les données envoyées doivent être un tableau.' });
         }
-    
+
         try {
-            // Suppression des cellules spécifiques
             for (let cellData of cellsData) {
                 await Cell.destroy({
                     where: {
@@ -254,7 +284,7 @@ const roomController = {
                     }
                 });
             }
-    
+
             res.status(200).json({ message: 'Cellules supprimées avec succès' });
         } catch (error) {
             console.error('Erreur lors de la suppression des cellules:', error);
@@ -265,27 +295,14 @@ const roomController = {
     async updateUserImg(req, res) {
         const { img } = req.body;
         const userId = req.session.user.id;
-        console.log("User ID: " + userId + "Image: " + img);
         await User.update({ img: img }, { where: { id: userId } });
         res.json({ success: true });
-        
     },
-    
-    async getCharacterSelection(req, res) {
-    
-        // Filtrer les items avec item_type = 9
-        const characters = await Item.findAll({
-            where: {
-                item_type: 9
-            }
-        });
 
-        // Retourner les données en JSON
+    async getCharacterSelection(req, res) {
+        const characters = await Item.findAll({ where: { item_type: 9 } });
         res.json({ success: true, characters });
-        
-    
     }
-    
 };
 
 module.exports = { roomController };

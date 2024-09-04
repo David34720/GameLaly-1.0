@@ -215,11 +215,40 @@ export class GameEngine {
                 this.player.x = newX;
                 this.player.y = newY;
                 this.renderPlayer(); // Afficher le joueur à la nouvelle position
+    
+                // Garder le joueur centré si nécessaire
+                this.centerPlayerInView();
             });
         } else {
             console.log("Mouvement invalide");
         }
     }
+    
+    centerPlayerInView() {
+        const playerElement = document.getElementById("player-element");
+        const mapContainer = document.getElementById("map-container");
+    
+        const containerRect = mapContainer.getBoundingClientRect();
+        const playerRect = playerElement.getBoundingClientRect();
+    
+        const thresholdX = containerRect.width * 0.2; // 20% du conteneur pour l'axe X
+        const thresholdY = containerRect.height * 0.2; // 20% du conteneur pour l'axe Y
+    
+        // Si le joueur est à moins de 20% du bord gauche ou droit, scroll horizontalement
+        if (playerRect.left - containerRect.left < thresholdX) {
+            mapContainer.scrollLeft -= thresholdX - (playerRect.left - containerRect.left);
+        } else if (containerRect.right - playerRect.right < thresholdX) {
+            mapContainer.scrollLeft += thresholdX - (containerRect.right - playerRect.right);
+        }
+    
+        // Si le joueur est à moins de 20% du bord haut ou bas, scroll verticalement
+        if (playerRect.top - containerRect.top < thresholdY) {
+            mapContainer.scrollTop -= thresholdY - (playerRect.top - containerRect.top);
+        } else if (containerRect.bottom - playerRect.bottom < thresholdY) {
+            mapContainer.scrollTop += thresholdY - (containerRect.bottom - playerRect.bottom);
+        }
+    }
+    
     
     updateSpritePosition(deltaX, deltaY, callback) {
         const playerElement = document.getElementById("player-element");

@@ -1,3 +1,4 @@
+
 class CustomNotification {
     constructor(message, level = 'success', duration = 3000) {
         this.message = message;
@@ -114,6 +115,20 @@ document.addEventListener("DOMContentLoaded", () => {
             })
             .catch(error => console.error('Erreur:', error));
     });
+
+    // Met à jour visuellement la cellule dans l'interface utilisateur
+    updateCellInUI(updatedCell) {
+        const cellElement = document.querySelector(`[data-pos-x="${updatedCell.pos_x}"][data-pos-y="${updatedCell.pos_y}"]`);
+        if (cellElement) {
+            cellElement.style.backgroundColor = updatedCell.item_id ? "#007bff" : "#fff"; // Change la couleur en fonction de l'existence d'un item
+            cellElement.innerHTML = updatedCell.item_id ? `<img src="${this.getItemById(updatedCell.item_id).img}" />` : ''; // Affiche l'item si présent
+        }
+    }
+
+    // Fonction utilitaire pour obtenir un item par son ID
+    getItemById(itemId) {
+        return this.items.find(item => item.id === itemId);
+    }
 });
 
 

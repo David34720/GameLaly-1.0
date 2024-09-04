@@ -1,4 +1,5 @@
 const Level = require('./Level');
+const Message = require('./Message');
 const Map = require('./Map');
 const Room = require('./Room');
 const Cell = require('./Cell');
@@ -61,6 +62,19 @@ Cell.belongsTo(Item, {
     onDelete: 'SET NULL', // Si un item est supprimé, on met la valeur item_id à NULL dans la cellule
 });
 
+// Une cellule (Cell) peut avoir un message (Message)
+Cell.belongsTo(Message, {
+    foreignKey: 'message_id',
+    as: 'message',
+    onDelete: 'SET NULL', // Si le message est supprimé, on met la valeur message_id à NULL dans la cellule
+});
+
+// Un message (Message) peut appartenir à une cellule (Cell)
+Message.hasOne(Cell, {
+    foreignKey: 'message_id',
+    as: 'cell',
+});
+
 // Un item (Item) peut être présent dans plusieurs cellules (Cells)
 Item.hasMany(Cell, {
     foreignKey: 'item_id',
@@ -104,4 +118,4 @@ User.belongsTo(Role, {
 });
 
 // Export des modèles avec leurs relations
-module.exports = { Level, Map, Room, Cell, Item, ItemType, User };
+module.exports = { Level, Map, Room, Cell, Item, ItemType, User, Message };

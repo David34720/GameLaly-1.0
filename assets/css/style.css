@@ -324,3 +324,15 @@ body {
     color: #333;
     margin-top: 5px;
 }
+
+#cell-edit-form {
+    margin-top: 20px;
+}
+
+.form-label {
+    font-weight: bold;
+}
+
+input[type="range"] {
+    width: 100%;
+}

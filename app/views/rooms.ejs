@@ -1,4 +1,4 @@
-<!--  Include headers here -->
+<!-- Include headers here -->
 <%- include('partials/head') %>
 
 <main class="container-fluid py-4">
@@ -11,11 +11,12 @@
       <input class="btn btn-outline-info py-0 px-3 fs-6" type="submit" value="DUPLIQUER">
     </form>
     <!-- Titre centré -->
-    <h1 class="flex-grow-1 text-center my-3"><%= room.name %></h1>
+    <h1 class="flex-grow-1 text-center my-3 fs-3 fs-md-2 fs-lg-1"><%= room.name %></h1>
   
     <!-- Une div vide pour garder l'espace à droite du titre -->
     <div style="width: 100px;"></div> <!-- Ajustez cette largeur si nécessaire -->
   </div>
+  
   <!-- Formulaire pour éditer la Room en ligne -->
   <form action="/rooms/update/<%= room.id %>" method="POST" class="row g-2 mb-4">
     <div class="col-md-1">
@@ -36,28 +37,28 @@
       <input type="text" class="form-control" id="description" name="description" value="<%= room.description %>" required>
     </div>
 
-    <div class="half-col">
-      <label for="cell_size" class="form-label">Cellules</label>
+    <div class="col-md-1 half-col">
+      <label for="cell_size" class="form-label">Cell.</label>
       <input type="number" class="form-control" id="cell_size" name="cell_size" value="<%= room.cell_size || '30' %>" required>
     </div>
 
-    <div class="half-col">
-      <label for="nb_rows" class="form-label">Lignes</label>
+    <div class="col-md-1 half-col">
+      <label for="nb_rows" class="form-label">Ligne</label>
       <input type="number" class="form-control" id="nb_rows" name="nb_rows" value="<%= room.nb_rows || '20' %>" required>
     </div>
 
-    <div class="half-col">
-      <label for="nb_cols" class="form-label">Colonnes</label>
+    <div class="col-md-1 half-col">
+      <label for="nb_cols" class="form-label">Col</label>
       <input type="number" class="form-control" id="nb_cols" name="nb_cols" value="<%= room.nb_cols || '20'%>" required>
     </div>
 
-    <div class="half-col">
-      <label for="start_x" class="form-label">Départ X</label>
+    <div class="col-md-1 half-col">
+      <label for="start_x" class="form-label">St. X</label>
       <input type="number" class="form-control" id="start_x" name="start_x" value="<%= room.start_x || '0'%>" required>
     </div>
 
-    <div class="half-col">
-      <label for="start_y" class="form-label">Départ Y</label>
+    <div class="col-md-1 half-col">
+      <label for="start_y" class="form-label">St. Y</label>
       <input type="number" class="form-control" id="start_y" name="start_y" value="<%= room.start_y || '0'%>" required>
     </div>
 
@@ -66,79 +67,67 @@
       <input type="text" class="form-control" id="img_bg" name="img_bg" value="<%= room.img_bg %>">
     </div>
 
-    <div class="half-col" >
+    <div class="col-md-1">
       <label for="color_bg" class="form-label">Couleur</label>
       <input style="height: 36px" type="color" class="form-control" id="color_bg" name="color_bg" value="<%= room.color_bg || '#ffffff' %>">
-
     </div>
 
-
-    <div class="col-md-1 align-self-end" >
-      <button type="submit" class="btn btn-primary w-100">Mettre à Jour</button>
+    <div class="col-md-1 align-self-end half-col">
+      <button type="submit" class="btn btn-primary w-100">OK</button>
     </div>
-    
   </form>
 
-  
-    <div class="row">
-      <div class="banner" id="mode-banner"></div>
-      <!-- Colonne gauche : Liste des items -->
-      <!-- Bouton pour activer/désactiver le mode suppression -->
+  <div class="row">
+    <div class="banner" id="mode-banner"></div>
 
-      <div class="col-md-2 bg-light p-3 sidebar-left">
-        <div class="d-flex gap- justify-content-center" style="height: 70px;">
-          <button id="toggle-play-mode-button" class="btn btn-success mb-3 btn_state"> Jouer </button>
-         
-        </div>
-        <div class="d-flex gap-3 justify-content-center" style="height: 70px;">
-          <button id="toggle-delete-mode-button" class="btn btn-danger mb-3 btn_state"> Suppression</button>
-          <button id="toggle-insert-mode-button" class="btn btn-primary mb-3 btn_state"> Insertion</button>
-          <button id="toggle-select-mode-button" class="btn btn-secondary mb-3 btn_state"> Sélection</button>
-        </div>
-        <div id="item-list">
-            <h5>Liste des Items</h5>
-        </div>
-    </div>
-  
-      <!-- Colonne centrale : Grille de la room -->
-      <div class="col-md-8 d-flex justify-content-center">
-        <div id="map-container" class="border" style="position: relative; width: fit-content;" tabindex="0">
-          <!-- La map sera générée ici via du JavaScript -->
-        </div>
+    <!-- Colonne gauche : Liste des items -->
+    <div class="col-md-2 bg-light p-3 sidebar-left">
+      <div class="d-flex gap-2 justify-content-center" style="height: 70px;">
+        <button id="toggle-play-mode-button" class="btn btn-success mb-3 btn_state">Jouer</button>
       </div>
-  
-      <!-- Colonne droite : Détails de la cellule sélectionnée -->
-
-      <div class="col-md-2 bg-light p-3 sidebar-right" id="cell-details">
-        <button onclick="openModal()" class="btn btn-primary"><h6>Choisir le personnage</h6></button>
-        <h5>Détails de la Cellule</h5>
+      <div class="d-flex gap-2 justify-content-center" style="height: 70px;">
+        <button id="toggle-delete-mode-button" class="btn btn-danger mb-3 btn_state">Suppression</button>
+        <button id="toggle-insert-mode-button" class="btn btn-primary mb-3 btn_state">Insertion</button>
+        <button id="toggle-select-mode-button" class="btn btn-secondary mb-3 btn_state">Sélection</button>
+      </div>
+      <div id="item-list">
+        <h5>Liste des Items</h5>
       </div>
     </div>
-  
-  </main>
-  
-  <script type="module">
-    
-    const playerData = <%- JSON.stringify(playerData) %>;
-    const room = <%- JSON.stringify(room) %>;
-    const cells = <%- JSON.stringify(cells) %>;
-    const itemsData = <%- JSON.stringify(itemsData) %>;
-    console.log("room, cells, itemsData", room, cells, itemsData);
-    
-    const gameConfig = {
-      initialRoomData: room,
-      itemsData: itemsData,
-      playerData: playerData,
-      cells: cells
-    };
-    import { GameEngine } from '/js/GameEngine.js';
-  
-    const gameEngine = new GameEngine(gameConfig);
-    gameEngine.initializeGame();
-  </script>
-  
 
+    <!-- Colonne centrale : Grille de la room -->
+    <div class="col-md-8 d-flex justify-content-center">
+      <div id="map-container" class="border" style="position: relative; width: fit-content;" tabindex="0">
+        <!-- La map sera générée ici via du JavaScript -->
+      </div>
+    </div>
 
+    <!-- Colonne droite : Détails de la cellule sélectionnée -->
+    <div class="col-md-2 bg-light p-3 sidebar-right" id="cell-details">
+      <button onclick="openModal()" class="btn btn-primary"><h6>Choisir le personnage</h6></button>
+      <h5>Détails de la Cellule</h5>
+    </div>
+  </div>
+</main>
 
-<!--  Include footers here -->
+<script type="module">
+  const playerData = <%- JSON.stringify(playerData) %>;
+  const room = <%- JSON.stringify(room) %>;
+  const cells = <%- JSON.stringify(cells) %>;
+  const itemsData = <%- JSON.stringify(itemsData) %>;
+  console.log("room, cells, itemsData", room, cells, itemsData);
+  
+  const gameConfig = {
+    initialRoomData: room,
+    itemsData: itemsData,
+    playerData: playerData,
+    cells: cells
+  };
+  import { GameEngine } from '/js/GameEngine.js';
+  
+  const gameEngine = new GameEngine(gameConfig);
+  gameEngine.initializeGame();
+</script>
+
+<!-- Include footers here -->
 <%- include('partials/foot') %>

@@ -59,6 +59,12 @@ Item.init(
             allowNull: false,
             defaultValue: false,       
         },
+
+        is_object: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,       
+        },
         
         created_at: {
             type: DataTypes.DATE,

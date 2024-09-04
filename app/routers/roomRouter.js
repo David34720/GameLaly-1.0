@@ -16,6 +16,7 @@ roomRouter.post('/rooms/delete/:id(\\d+)', catcher(roomController.destroy));
 
 // Route pour sauvegarder les cellules
 roomRouter.post('/rooms/save-cells', catcher(roomController.saveCells));
+roomRouter.post('/rooms/update-cell', catcher(roomController.updateCell));
 roomRouter.delete('/rooms/delete-cells', catcher(roomController.deleteCells));
 
 // Route pour mettre à jour l'image du joueur

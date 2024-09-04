@@ -276,14 +276,120 @@ export class RoomBuilder {
     }
 
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
+    // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
     showCellDetails(cell) {
         const detailsContainer = document.getElementById("cell-details");
+    
         detailsContainer.innerHTML = `
-            <p>Position: (${cell.posX}, ${cell.posY})</p>
-            <p>Item ID: ${cell.item || "Aucun"}</p>
-            <p>Message ID: ${cell.message || "Aucun"}</p>
-        `;
+    <form id="cell-edit-form">
+        <input type="hidden" name="room_id" value="${this.roomData.id}">
+        <input type="hidden" name="pos_x" value="${cell.posX}">
+        <input type="hidden" name="pos_y" value="${cell.posY}">
+        
+        <!-- Sélection de l'item -->
+        <div class="mb-3">
+          <label for="item_id" class="form-label">Item</label>
+          <select class="form-select" id="item-id" name="item_id">
+            <option value="">Aucun</option>
+            ${this.items.map(item => `
+              <option value="${item.id}" ${cell.item === item.id ? 'selected' : ''}>${item.name}</option>
+            `).join('')}
+          </select>
+        </div>
+        
+        <!-- Position de la cellule -->
+        <div class="mb-3">
+            <label for="position" class="form-label">Position (x, y)</label>
+            <input type="text" class="form-control" id="position" name="position" value="(${cell.posX}, ${cell.posY})" readonly>
+        </div>
+
+        <!-- Largeur et hauteur avec des barres de défilement -->
+        <div class="mb-3">
+            <label for="width" class="form-label">Largeur</label>
+            <div class="d-flex align-items-center">
+                <input type="range" class="form-range" id="width" name="width" min="1" max="10" value="${cell.width}">
+                <input type="number" class="form-control ms-2" id="width-number" name="width-number" value="${cell.width}" style="width: 60px;">
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="height" class="form-label">Hauteur</label>
+            <div class="d-flex align-items-center">
+                <input type="range" class="form-range" id="height" name="height" min="1" max="10" value="${cell.height}">
+                <input type="number" class="form-control ms-2" id="height-number" name="height-number" value="${cell.height}" style="width: 60px;">
+            </div>
+        </div>
+
+        <!-- Message -->
+        <div class="mb-3">
+            <label for="message" class="form-label">Message</label>
+            <textarea class="form-control" id="message" name="message" rows="4">${cell.message || ''}</textarea>
+        </div>
+    </form>
+    `;
+
+        // Attachez les gestionnaires d'événements pour soumettre automatiquement le formulaire et synchroniser la largeur/hauteur
+        this.attachFormListeners();
     }
+
+    // Fonction pour attacher les écouteurs aux éléments du formulaire
+    attachFormListeners() {
+        const form = document.getElementById('cell-edit-form');
+
+        // Synchroniser les champs de largeur et hauteur avec les sliders
+        const widthSlider = document.getElementById('width');
+        const widthNumber = document.getElementById('width-number');
+        const heightSlider = document.getElementById('height');
+        const heightNumber = document.getElementById('height-number');
+
+        widthSlider.addEventListener('input', () => {
+            widthNumber.value = widthSlider.value;
+            this.autoSubmitForm(form);
+        });
+
+        widthNumber.addEventListener('input', () => {
+            widthSlider.value = widthNumber.value;
+            this.autoSubmitForm(form);
+        });
+
+        heightSlider.addEventListener('input', () => {
+            heightNumber.value = heightSlider.value;
+            this.autoSubmitForm(form);
+        });
+
+        heightNumber.addEventListener('input', () => {
+            heightSlider.value = heightNumber.value;
+            this.autoSubmitForm(form);
+        });
+
+        // Soumission automatique lorsque l'utilisateur modifie le formulaire
+        form.addEventListener('change', () => {
+            this.autoSubmitForm(form);
+        });
+    }
+
+    async autoSubmitForm(form) {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+    
+        try {
+            const response = await fetch('/rooms/update-cell', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+    
+            if (!response.ok) {
+                throw new Error('Erreur lors de la mise à jour de la cellule');
+            }
+    
+            console.log('Mise à jour de la cellule réussie');
+        } catch (error) {
+            console.error('Erreur lors de la soumission automatique du formulaire :', error);
+        }
+    }
+    
 
     // Place un item dans une cellule spécifique et met à jour son apparence.
     placeItemInCell(cell, itemId) {
