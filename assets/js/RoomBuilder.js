@@ -91,6 +91,32 @@ export class RoomBuilder {
         }
     }
 
+    async getMessageForCell(cell_id) {
+        console.log('Récupération des messages pour la cellule ' + cell_id);
+        try {
+            const response = await fetch(`/room/get-message-for-cell/${cell_id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+    
+            if (!response.ok) {
+                throw new Error('Erreur lors de la récupération des messages');
+            }
+    
+            const message = await response.json();
+            console.log('Message reçu:', message);
+    
+            return message;
+    
+        } catch (error) {
+            console.error('Erreur lors de la récupération des messages de la cellule :', error);
+        }
+    }
+
+    
+
 
     // Crée les cellules de la carte en fonction des données de la pièce (roomData) fournies lors de l'instanciation.
     // Les cellules sont initialisées avec leur position, leur taille, et les éventuels items ou messages.
@@ -306,94 +332,124 @@ export class RoomBuilder {
 
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
-    showCellDetails(cell) {
+    async showCellDetails(cell) {
         console.log(`Affiche les détails de la cellule : (${cell.posX}, ${cell.id})`);
         const detailsContainer = document.getElementById("cell-details");
     
-        // Filtrer le message associé à cette cellule
-        const messageForCell = this.messagesForRoom.find(message => message.cell.id === cell.id);
-        const messageContent = messageForCell ? messageForCell.text : '';
+        if (!detailsContainer) {
+            console.error("Le conteneur de détails des cellules est introuvable.");
+            return;
+        }
     
+        // Récupérer le message pour cette cellule
+        const messageForCell = await this.getMessageForCell(cell.id);
+        console.log('Message pour la cellule:', messageForCell);
+    
+        // Si le message est vide ou absent, afficher un texte par défaut
+        const messageContent = messageForCell ? messageForCell.text : 'Aucun message trouvé pour cette cellule';
+    
+        // Injecter le contenu HTML
         detailsContainer.innerHTML = `
-        <form id="cell-edit-form">
-            <input type="hidden" name="room_id" value="${this.roomData.id}">
-            <input type="hidden" name="pos_x" value="${cell.posX}">
-            <input type="hidden" name="pos_y" value="${cell.posY}">
-            
-            <!-- Sélection de l'item -->
-            <div class="mb-3">
-                <span class="badge bg-info p-3">Sélection de l'item ${cell.id}</span>
-            </div>
-            <div class="mb-3">
-              <label for="item_id" class="form-label">Item</label>
-              <select class="form-select" id="item-id" name="item_id">
-                <option value="">Aucun</option>
-                ${this.items.map(item => `
-                  <option value="${item.id}" ${cell.item === item.id ? 'selected' : ''}>${item.name}</option>
-                `).join('')}
-              </select>
-            </div>
-            
-            <!-- Position de la cellule -->
-            <div class="mb-3">
-                <label for="position" class="form-label">Position (x, y)</label>
-                <input type="text" class="form-control" id="position" name="position" value="(${cell.posX}, ${cell.posY})" readonly>
-            </div>
+            <form id="cell-edit-form">
+                <input type="hidden" name="room_id" value="${this.roomData.id}">
+                <input type="hidden" name="pos_x" value="${cell.posX}">
+                <input type="hidden" name="pos_y" value="${cell.posY}">
+                
+                <!-- Sélection de l'item -->
+                <div class="mb-3">
+                    <span class="badge bg-info p-3">Sélection de l'item ${cell.id}</span>
+                </div>
+                <div class="mb-3">
+                  <label for="item_id" class="form-label">Item</label>
+                  <select class="form-select" id="item-id" name="item_id">
+                    <option value="">Aucun</option>
+                    ${this.items.map(item => `
+                      <option value="${item.id}" ${cell.item === item.id ? 'selected' : ''}>${item.name}</option>
+                    `).join('')}
+                  </select>
+                </div>
+                
+                <!-- Position de la cellule -->
+                <div class="mb-3">
+                    <label for="position" class="form-label">Position (x, y)</label>
+                    <input type="text" class="form-control" id="position" name="position" value="(${cell.posX}, ${cell.posY})" readonly>
+                </div>
     
-            <!-- Largeur et hauteur avec des barres de défilement -->
-            <div class="mb-3">
-                <label for="width" class="form-label">Largeur</label>
-                <div class="d-flex align-items-center">
-                    <input type="range" class="form-range" id="width" name="width" min="1" max="10" value="${cell.width}">
+                <!-- Largeur et hauteur avec des barres de défilement -->
+                <div class="mb-3">
+                    <label for="width" class="form-label">Largeur</label>
+                    <div class="d-flex align-items-center">
+                        <input type="range" class="form-range" id="width" name="width" min="1" max="10" value="${cell.width}">
+                    </div>
                 </div>
-            </div>
-            <div class="mb-3">
-                <label for="height" class="form-label">Hauteur</label>
-                <div class="d-flex align-items-center">
-                    <input type="range" class="form-range" id="height" name="height" min="1" max="10" value="${cell.height}">
+                <div class="mb-3">
+                    <label for="height" class="form-label">Hauteur</label>
+                    <div class="d-flex align-items-center">
+                        <input type="range" class="form-range" id="height" name="height" min="1" max="10" value="${cell.height}">
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
     
             <!-- Message -->
-        <form id="message-form">
-            <input type="hidden" name="cell_id" value="${cell.id}">
-            <div class="mb-3">
-                <label for="messageContent" class="form-label">Message</label>
-                <textarea class="form-control" id="messageContent" name="messageContent" rows="4">${messageContent}</textarea>
-            </div>
-    
-            <button type="submit" class="btn btn-primary">Sauvegarder</button>
-        </form>
+            <form id="message-form">
+                <input type="hidden" name="cell_id" value="${cell.id}">
+                <div class="mb-3">
+                    <label for="messageContent" class="form-label">Message</label>
+                    <textarea class="form-control" id="messageContent" name="messageContent" rows="4">${messageContent}</textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" id="save-message-btn" >Sauvegarder</button>
+            </form>
         `;
-
-        // Attachez les gestionnaires d'événements pour soumettre automatiquement le formulaire et synchroniser la largeur/hauteur
+    
+        // Assurez-vous que le HTML est injecté avant d'appeler les écouteurs d'événements
         this.attachFormListeners();
         this.messageCellSubmitForm();
     }
+    
+
 
     // Fonction pour attacher les écouteurs aux éléments du formulaire
     attachFormListeners() {
         const form = document.getElementById('cell-edit-form');
-
+    
+        if (!form) {
+            console.error('Le formulaire de la cellule est introuvable.');
+            return;
+        }
+    
         // Synchroniser les champs de largeur et hauteur avec les sliders
         const widthSlider = document.getElementById('width');
         const heightSlider = document.getElementById('height');
-
-        widthSlider.addEventListener('input', () => {
-            
-            this.autoSubmitForm(form);
-        });
-
-        heightSlider.addEventListener('input', () => {
-        
-            this.autoSubmitForm(form);
-        });
+    
+        if (widthSlider) {
+            widthSlider.addEventListener('input', () => {
+                this.autoSubmitForm(form);
+            });
+        } else {
+            console.warn('Le slider de largeur est introuvable.');
+        }
+    
+        if (heightSlider) {
+            heightSlider.addEventListener('input', () => {
+                this.autoSubmitForm(form);
+            });
+        } else {
+            console.warn('Le slider de hauteur est introuvable.');
+        }
+    
         // Soumission automatique lorsque l'utilisateur modifie le formulaire
         form.addEventListener('change', () => {
             this.autoSubmitForm(form);
         });
+
+        // soumission du form message dans cell détail
+        const btnSaveMessageCell = document.getElementById('message-form');
+        btnSaveMessageCell.addEventListener('submit', (event) => {
+            event.preventDefault();
+            this.messageCellSubmitForm();
+        })
     }
+    
 
     async autoSubmitForm(form) {
         const formData = new FormData(form);
@@ -431,11 +487,11 @@ export class RoomBuilder {
                 },
                 body: JSON.stringify(data),
             });
-    
+        
             if (!response.ok) {
                 throw new Error('Erreur lors de la mise à jour du message de la cellule');
             }
-    
+        
             console.log('Mise à jour du message de la cellule réussie');
         } catch (error) {
             console.error('Erreur lors de la soumission automatique du formulaire :', error);

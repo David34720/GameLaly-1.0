@@ -280,26 +280,74 @@ const roomController = {
 
     async getMessageForCell(req, res) {
         const { cell_id } = req.params;
-        const messages = await Message.findAll({
-            where: {
-                cell_id
+    
+        try {
+            // Cherche la cellule avec le message associé
+            const cellWithMessage = await Cell.findOne({
+                where: { id: cell_id },
+                include: [{
+                    model: Message,
+                    as: 'message',  // S'assurer que l'alias est correct
+                    attributes: ['id', 'text', 'created_at', 'updated_at']  // Sélectionner les attributs pertinents du message
+                }]
+            });
+    
+            // Si la cellule ou le message n'existe pas, retourner un message vide
+            if (!cellWithMessage || !cellWithMessage.message) {
+                return res.json({ text: '' });  // Retourne un objet avec un texte vide
             }
-        });
-        res.json(messages);
+    
+            res.json(cellWithMessage.message);  // Retourne le message s'il existe
+        } catch (error) {
+            console.error('Erreur lors de la récupération du message pour la cellule :', error);
+            res.status(500).json({ error: 'Erreur serveur lors de la récupération du message' });
+        }
     },
+    
     
     async updateCellMessage(req, res) {
         try {
             const { cell_id, messageContent } = req.body;
-            console.log('Update cell data received:', req.body);
+    
+            // Vérifie si les données nécessaires sont présentes
+            if (!cell_id || !messageContent) {
+                return res.status(400).json({ error: 'cell_id et messageContent sont requis.' });
+            }
+    
+            // Recherche de la cellule à mettre à jour
+            const cell = await Cell.findByPk(cell_id);
+    
+            if (!cell) {
+                return res.status(404).json({ error: 'Cellule non trouvée.' });
+            }
+    
+            let message;
             
-
-            res.status(200).json({ message: 'Message mis à jour avec succès' });
+            // Si la cellule a déjà un message, on le met à jour, sinon on en crée un nouveau
+            if (cell.message_id) {
+                // Mise à jour du message existant
+                message = await Message.findByPk(cell.message_id);
+                if (message) {
+                    await message.update({ text: messageContent });
+                } else {
+                    return res.status(404).json({ error: 'Message non trouvé.' });
+                }
+            } else {
+                // Création d'un nouveau message
+                message = await Message.create({ text: messageContent });
+                // Mise à jour de la cellule pour associer le nouveau message
+                await cell.update({ message_id: message.id });
+            }
+    
+            console.log('Message mis à jour:', message);
+    
+            res.status(200).json({ message: 'Message mis à jour avec succès', messageData: message });
         } catch (error) {
             console.error('Erreur lors de la mise à jour du message:', error);
-            res.status(500).json({ error: 'Erreur lors de la mise à jour du message.' });   
-        }   
+            res.status(500).json({ error: 'Erreur lors de la mise à jour du message.' });
+        }
     },
+    
     async deleteCells(req, res) {
         const cellsData = req.body;
 

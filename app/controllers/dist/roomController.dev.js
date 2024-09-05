@@ -634,56 +634,166 @@ var roomController = {
     }, null, null, [[1, 10]]);
   },
   getMessageForCell: function getMessageForCell(req, res) {
-    var cell_id, messages;
+    var cell_id, cellWithMessage;
     return regeneratorRuntime.async(function getMessageForCell$(_context12) {
       while (1) {
         switch (_context12.prev = _context12.next) {
           case 0:
             cell_id = req.params.cell_id;
-            _context12.next = 3;
-            return regeneratorRuntime.awrap(Message.findAll({
+            _context12.prev = 1;
+            _context12.next = 4;
+            return regeneratorRuntime.awrap(Cell.findOne({
               where: {
-                cell_id: cell_id
-              }
+                id: cell_id
+              },
+              include: [{
+                model: Message,
+                as: 'message',
+                // S'assurer que l'alias est correct
+                attributes: ['id', 'text', 'created_at', 'updated_at'] // Sélectionner les attributs pertinents du message
+
+              }]
             }));
 
-          case 3:
-            messages = _context12.sent;
-            res.json(messages);
+          case 4:
+            cellWithMessage = _context12.sent;
 
-          case 5:
+            if (!(!cellWithMessage || !cellWithMessage.message)) {
+              _context12.next = 7;
+              break;
+            }
+
+            return _context12.abrupt("return", res.json({
+              text: ''
+            }));
+
+          case 7:
+            res.json(cellWithMessage.message); // Retourne le message s'il existe
+
+            _context12.next = 14;
+            break;
+
+          case 10:
+            _context12.prev = 10;
+            _context12.t0 = _context12["catch"](1);
+            console.error('Erreur lors de la récupération du message pour la cellule :', _context12.t0);
+            res.status(500).json({
+              error: 'Erreur serveur lors de la récupération du message'
+            });
+
+          case 14:
           case "end":
             return _context12.stop();
         }
       }
-    });
+    }, null, null, [[1, 10]]);
   },
   updateCellMessage: function updateCellMessage(req, res) {
-    var _req$body3, cell_id, messageContent;
+    var _req$body3, cell_id, messageContent, cell, message;
 
     return regeneratorRuntime.async(function updateCellMessage$(_context13) {
       while (1) {
         switch (_context13.prev = _context13.next) {
           case 0:
-            try {
-              _req$body3 = req.body, cell_id = _req$body3.cell_id, messageContent = _req$body3.messageContent;
-              console.log('Update cell data received:', req.body);
-              res.status(200).json({
-                message: 'Message mis à jour avec succès'
-              });
-            } catch (error) {
-              console.error('Erreur lors de la mise à jour du message:', error);
-              res.status(500).json({
-                error: 'Erreur lors de la mise à jour du message.'
-              });
+            _context13.prev = 0;
+            _req$body3 = req.body, cell_id = _req$body3.cell_id, messageContent = _req$body3.messageContent; // Vérifie si les données nécessaires sont présentes
+
+            if (!(!cell_id || !messageContent)) {
+              _context13.next = 4;
+              break;
             }
 
-          case 1:
+            return _context13.abrupt("return", res.status(400).json({
+              error: 'cell_id et messageContent sont requis.'
+            }));
+
+          case 4:
+            _context13.next = 6;
+            return regeneratorRuntime.awrap(Cell.findByPk(cell_id));
+
+          case 6:
+            cell = _context13.sent;
+
+            if (cell) {
+              _context13.next = 9;
+              break;
+            }
+
+            return _context13.abrupt("return", res.status(404).json({
+              error: 'Cellule non trouvée.'
+            }));
+
+          case 9:
+            if (!cell.message_id) {
+              _context13.next = 21;
+              break;
+            }
+
+            _context13.next = 12;
+            return regeneratorRuntime.awrap(Message.findByPk(cell.message_id));
+
+          case 12:
+            message = _context13.sent;
+
+            if (!message) {
+              _context13.next = 18;
+              break;
+            }
+
+            _context13.next = 16;
+            return regeneratorRuntime.awrap(message.update({
+              text: messageContent
+            }));
+
+          case 16:
+            _context13.next = 19;
+            break;
+
+          case 18:
+            return _context13.abrupt("return", res.status(404).json({
+              error: 'Message non trouvé.'
+            }));
+
+          case 19:
+            _context13.next = 26;
+            break;
+
+          case 21:
+            _context13.next = 23;
+            return regeneratorRuntime.awrap(Message.create({
+              text: messageContent
+            }));
+
+          case 23:
+            message = _context13.sent;
+            _context13.next = 26;
+            return regeneratorRuntime.awrap(cell.update({
+              message_id: message.id
+            }));
+
+          case 26:
+            console.log('Message mis à jour:', message);
+            res.status(200).json({
+              message: 'Message mis à jour avec succès',
+              messageData: message
+            });
+            _context13.next = 34;
+            break;
+
+          case 30:
+            _context13.prev = 30;
+            _context13.t0 = _context13["catch"](0);
+            console.error('Erreur lors de la mise à jour du message:', _context13.t0);
+            res.status(500).json({
+              error: 'Erreur lors de la mise à jour du message.'
+            });
+
+          case 34:
           case "end":
             return _context13.stop();
         }
       }
-    });
+    }, null, null, [[0, 30]]);
   },
   deleteCells: function deleteCells(req, res) {
     var cellsData, _iteratorNormalCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, cellData;

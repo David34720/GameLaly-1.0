@@ -28,7 +28,7 @@ roomRouter.delete('/rooms/delete-cells', catcher(roomController.deleteCells));
 // Route pour mettre à jour l'image du joueur
 roomRouter.post('/room/update-cell-message', catcher(roomController.updateCellMessage));
 roomRouter.get('/room/get-messages-for-room/:room_id(\\d+)', catcher(roomController.getMessagesForRoom));
-roomRouter.get('/room/get-message-for-cell/:id(\\d+)', catcher(roomController.updateCellMessage));
+roomRouter.get('/room/get-message-for-cell/:cell_id(\\d+)', catcher(roomController.getMessageForCell));
 
 
 roomRouter.post('/update-user-img', roomController.updateUserImg);
