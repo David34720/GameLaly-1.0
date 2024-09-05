@@ -84,9 +84,12 @@ export class RoomBuilder {
                 };
                 const existingCell = this.roomData.cells.find(c => c.pos_x === x && c.pos_y === y); // Vérifie si une cellule existe déjà à cette position.
                 if (existingCell) {
+                    console.log("Cellule existante:", existingCell);
                     cell.exists = true; // Marque la cellule comme existante.
                     cell.item = existingCell.item_id; // Associe l'item existant à la cellule.
                     cell.message = existingCell.message_id; // Associe le message existant à la cellule.
+                    cell.id = existingCell.id;
+                    console.log("Cellule existante IDDDDDD:", cell);
                 }
                 this.cells.push(cell); // Ajoute la cellule au tableau des cellules.
             }
@@ -165,6 +168,7 @@ export class RoomBuilder {
 
         if (this.mode === 'select') {
             this.selectCell(cell); // Sélectionne la cellule pour afficher ses détails.
+            console.log('handleInrecation', cell)
             return;
         }
 
@@ -268,7 +272,7 @@ export class RoomBuilder {
 
     // Sélectionne une cellule et affiche ses détails dans l'interface utilisateur.
     selectCell(cell) {
-        console.log(`Sélection de la cellule : (${cell.posX}, ${cell.posY})`);
+        console.log(`Sélection de la cellule : (${cell.posX}, ${cell.posY}, ${cell.id})`);
         this.showCellDetails(cell); // Affiche les détails de la cellule sélectionnée.
         if (cell.exists && cell.item) {
             this.highlightSelectedItem(this.items.find(item => item.id === cell.item)); // Met en évidence l'item sélectionné.
@@ -278,15 +282,29 @@ export class RoomBuilder {
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
     showCellDetails(cell) {
+        console.log(`Affiche les détails de la cellule : (${cell.posX}, ${cell.id})`);
         const detailsContainer = document.getElementById("cell-details");
-    
+
+
+
+
+        ////    RECHERCHER LES MESSAGE CAR cell.id = ok
+
+
+
+
+        
         detailsContainer.innerHTML = `
     <form id="cell-edit-form">
         <input type="hidden" name="room_id" value="${this.roomData.id}">
         <input type="hidden" name="pos_x" value="${cell.posX}">
         <input type="hidden" name="pos_y" value="${cell.posY}">
+        <input type="hidden" name="cell_id" value="${cell_id}">
         
         <!-- Sélection de l'item -->
+        <div class="mb-3">
+            <span class="badge bg-info p-3">Sélection de l'item${cell.id}</span>
+        </div>
         <div class="mb-3">
           <label for="item_id" class="form-label">Item</label>
           <select class="form-select" id="item-id" name="item_id">
@@ -308,14 +326,12 @@ export class RoomBuilder {
             <label for="width" class="form-label">Largeur</label>
             <div class="d-flex align-items-center">
                 <input type="range" class="form-range" id="width" name="width" min="1" max="10" value="${cell.width}">
-                <input type="number" class="form-control ms-2" id="width-number" name="width-number" value="${cell.width}" style="width: 60px;">
             </div>
         </div>
         <div class="mb-3">
             <label for="height" class="form-label">Hauteur</label>
             <div class="d-flex align-items-center">
                 <input type="range" class="form-range" id="height" name="height" min="1" max="10" value="${cell.height}">
-                <input type="number" class="form-control ms-2" id="height-number" name="height-number" value="${cell.height}" style="width: 60px;">
             </div>
         </div>
 
@@ -337,29 +353,21 @@ export class RoomBuilder {
 
         // Synchroniser les champs de largeur et hauteur avec les sliders
         const widthSlider = document.getElementById('width');
-        const widthNumber = document.getElementById('width-number');
         const heightSlider = document.getElementById('height');
-        const heightNumber = document.getElementById('height-number');
 
         widthSlider.addEventListener('input', () => {
-            widthNumber.value = widthSlider.value;
+            
             this.autoSubmitForm(form);
         });
 
-        widthNumber.addEventListener('input', () => {
-            widthSlider.value = widthNumber.value;
-            this.autoSubmitForm(form);
-        });
+      
 
         heightSlider.addEventListener('input', () => {
-            heightNumber.value = heightSlider.value;
+        
             this.autoSubmitForm(form);
         });
 
-        heightNumber.addEventListener('input', () => {
-            heightSlider.value = heightNumber.value;
-            this.autoSubmitForm(form);
-        });
+        
 
         // Soumission automatique lorsque l'utilisateur modifie le formulaire
         form.addEventListener('change', () => {
@@ -370,9 +378,9 @@ export class RoomBuilder {
     async autoSubmitForm(form) {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData);
-    
+        console.log('..... data   ' + data);
         try {
-            const response = await fetch('/rooms/update-cell', {
+            const response = await fetch('/room/update-cell', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

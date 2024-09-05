@@ -114,10 +114,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             })
             .catch(error => console.error('Erreur:', error));
-    });
+    })
 
     // Met à jour visuellement la cellule dans l'interface utilisateur
-    updateCellInUI(updatedCell) {
+    window.updateCellInUI = (updatedCell) => {
         const cellElement = document.querySelector(`[data-pos-x="${updatedCell.pos_x}"][data-pos-y="${updatedCell.pos_y}"]`);
         if (cellElement) {
             cellElement.style.backgroundColor = updatedCell.item_id ? "#007bff" : "#fff"; // Change la couleur en fonction de l'existence d'un item
@@ -126,7 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Fonction utilitaire pour obtenir un item par son ID
-    getItemById(itemId) {
+    window.getItemById = (itemId) => {
         return this.items.find(item => item.id === itemId);
     }
 });

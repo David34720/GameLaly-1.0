@@ -210,61 +210,46 @@ const roomController = {
 
     // Méthode pour mettre à jour une cellule, incluant la gestion de la largeur et de la hauteur
     async updateCell(req, res) {
-        const { room_id, pos_x, pos_y, item_id, message_id, message, width, height, offset_x, offset_y } = req.body;
-
         try {
-            // Recherche de la cellule par room_id, pos_x et pos_y
+            console.log('Update cell data received:', req.body);
+    
+            const { cell_id, room_id, pos_x, pos_y, item_id, message_id, message, width, height } = req.body;
+    
             const cell = await Cell.findOne({
-                where: { room_id, pos_x, pos_y }
+                where: { id: cell_id }
             });
-
+    
             if (!cell) {
                 return res.status(404).json({ error: 'Cellule non trouvée' });
             }
-
-            // Gestion de la création ou de la mise à jour des messages
+    
             let newMessageId = message_id;
             if (message) {
                 if (message_id) {
-                    // Mise à jour du message existant
                     const existingMessage = await Message.findByPk(message_id);
                     if (existingMessage) {
                         await existingMessage.update({ text: message });
                     }
                 } else {
-                    // Création d'un nouveau message
                     const newMessage = await Message.create({ room_id, text: message });
                     newMessageId = newMessage.id;
                 }
             }
-
-            // Mise à jour de la cellule, incluant la largeur et la hauteur
+    
             await cell.update({
                 item_id: item_id || null,
                 message_id: newMessageId || null,
                 width: width || 1,
                 height: height || 1,
-                offset_x: offset_x || 0,
-                offset_y: offset_y || 0
             });
-
-            // Renvoi de la cellule complète après mise à jour
-            return res.status(200).json({
-                pos_x: cell.pos_x,
-                pos_y: cell.pos_y,
-                item_id: cell.item_id,
-                message_id: newMessageId,
-                exists: true,
-                width: cell.width,
-                height: cell.height,
-                offset_x: cell.offset_x,
-                offset_y: cell.offset_y
-            });
+    
+            res.status(200).json({ message: 'Cellule mise à jour avec succès' });
         } catch (error) {
             console.error('Erreur lors de la mise à jour de la cellule:', error);
             res.status(500).json({ error: 'Erreur lors de la mise à jour de la cellule.' });
         }
     },
+    
     
 
     async deleteCells(req, res) {
