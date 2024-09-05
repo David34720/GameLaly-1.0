@@ -309,44 +309,41 @@ const roomController = {
         try {
             const { cell_id, messageContent } = req.body;
     
-            // Vérifie si les données nécessaires sont présentes
-            if (!cell_id || !messageContent) {
-                return res.status(400).json({ error: 'cell_id et messageContent sont requis.' });
+            // Vérification des données nécessaires
+            if (!cell_id || typeof messageContent !== 'string') {
+                return res.status(400).json({ error: 'cell_id et messageContent sont requis et valides.' });
             }
     
-            // Recherche de la cellule à mettre à jour
+            // Récupération de la cellule
             const cell = await Cell.findByPk(cell_id);
     
             if (!cell) {
                 return res.status(404).json({ error: 'Cellule non trouvée.' });
             }
     
-            let message;
-            
-            // Si la cellule a déjà un message, on le met à jour, sinon on en crée un nouveau
+            // Si la cellule a un message, on le met à jour, sinon on en crée un
             if (cell.message_id) {
-                // Mise à jour du message existant
-                message = await Message.findByPk(cell.message_id);
+                const message = await Message.findByPk(cell.message_id);
                 if (message) {
                     await message.update({ text: messageContent });
+                    console.log('Message mis à jour:', message);
+                    res.status(200).json({ message: 'Message mis à jour avec succès', messageData: message });
                 } else {
                     return res.status(404).json({ error: 'Message non trouvé.' });
                 }
             } else {
-                // Création d'un nouveau message
-                message = await Message.create({ text: messageContent });
-                // Mise à jour de la cellule pour associer le nouveau message
-                await cell.update({ message_id: message.id });
+                // Création d'un nouveau message et association à la cellule
+                const newMessage = await Message.create({ text: messageContent });
+                await cell.update({ message_id: newMessage.id });
+                console.log('Nouveau message créé:', newMessage);
+                res.status(200).json({ message: 'Message créé et associé à la cellule avec succès', messageData: newMessage });
             }
-    
-            console.log('Message mis à jour:', message);
-    
-            res.status(200).json({ message: 'Message mis à jour avec succès', messageData: message });
         } catch (error) {
             console.error('Erreur lors de la mise à jour du message:', error);
             res.status(500).json({ error: 'Erreur lors de la mise à jour du message.' });
         }
     },
+    
     
     async deleteCells(req, res) {
         const cellsData = req.body;

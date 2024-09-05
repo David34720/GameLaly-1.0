@@ -689,22 +689,22 @@ var roomController = {
     }, null, null, [[1, 10]]);
   },
   updateCellMessage: function updateCellMessage(req, res) {
-    var _req$body3, cell_id, messageContent, cell, message;
+    var _req$body3, cell_id, messageContent, cell, message, newMessage;
 
     return regeneratorRuntime.async(function updateCellMessage$(_context13) {
       while (1) {
         switch (_context13.prev = _context13.next) {
           case 0:
             _context13.prev = 0;
-            _req$body3 = req.body, cell_id = _req$body3.cell_id, messageContent = _req$body3.messageContent; // Vérifie si les données nécessaires sont présentes
+            _req$body3 = req.body, cell_id = _req$body3.cell_id, messageContent = _req$body3.messageContent; // Vérification des données nécessaires
 
-            if (!(!cell_id || !messageContent)) {
+            if (!(!cell_id || typeof messageContent !== 'string')) {
               _context13.next = 4;
               break;
             }
 
             return _context13.abrupt("return", res.status(400).json({
-              error: 'cell_id et messageContent sont requis.'
+              error: 'cell_id et messageContent sont requis et valides.'
             }));
 
           case 4:
@@ -725,7 +725,7 @@ var roomController = {
 
           case 9:
             if (!cell.message_id) {
-              _context13.next = 21;
+              _context13.next = 23;
               break;
             }
 
@@ -736,7 +736,7 @@ var roomController = {
             message = _context13.sent;
 
             if (!message) {
-              _context13.next = 18;
+              _context13.next = 20;
               break;
             }
 
@@ -746,54 +746,61 @@ var roomController = {
             }));
 
           case 16:
-            _context13.next = 19;
-            break;
-
-          case 18:
-            return _context13.abrupt("return", res.status(404).json({
-              error: 'Message non trouvé.'
-            }));
-
-          case 19:
-            _context13.next = 26;
-            break;
-
-          case 21:
-            _context13.next = 23;
-            return regeneratorRuntime.awrap(Message.create({
-              text: messageContent
-            }));
-
-          case 23:
-            message = _context13.sent;
-            _context13.next = 26;
-            return regeneratorRuntime.awrap(cell.update({
-              message_id: message.id
-            }));
-
-          case 26:
             console.log('Message mis à jour:', message);
             res.status(200).json({
               message: 'Message mis à jour avec succès',
               messageData: message
             });
-            _context13.next = 34;
+            _context13.next = 21;
             break;
 
+          case 20:
+            return _context13.abrupt("return", res.status(404).json({
+              error: 'Message non trouvé.'
+            }));
+
+          case 21:
+            _context13.next = 30;
+            break;
+
+          case 23:
+            _context13.next = 25;
+            return regeneratorRuntime.awrap(Message.create({
+              text: messageContent
+            }));
+
+          case 25:
+            newMessage = _context13.sent;
+            _context13.next = 28;
+            return regeneratorRuntime.awrap(cell.update({
+              message_id: newMessage.id
+            }));
+
+          case 28:
+            console.log('Nouveau message créé:', newMessage);
+            res.status(200).json({
+              message: 'Message créé et associé à la cellule avec succès',
+              messageData: newMessage
+            });
+
           case 30:
-            _context13.prev = 30;
+            _context13.next = 36;
+            break;
+
+          case 32:
+            _context13.prev = 32;
             _context13.t0 = _context13["catch"](0);
             console.error('Erreur lors de la mise à jour du message:', _context13.t0);
             res.status(500).json({
               error: 'Erreur lors de la mise à jour du message.'
             });
 
-          case 34:
+          case 36:
           case "end":
             return _context13.stop();
         }
       }
-    }, null, null, [[0, 30]]);
+    }, null, null, [[0, 32]]);
   },
   deleteCells: function deleteCells(req, res) {
     var cellsData, _iteratorNormalCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, cellData;

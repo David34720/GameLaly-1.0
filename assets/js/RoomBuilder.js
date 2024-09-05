@@ -478,7 +478,13 @@ export class RoomBuilder {
         const messageForm = document.getElementById('message-form');
         const formData = new FormData(messageForm);
         const data = Object.fromEntries(formData);
-        console.log('..... data   ' + formData);
+    
+        // Vérification si le contenu du message est bien présent
+        if (!data.messageContent || data.messageContent.trim() === '') {
+            
+            return; // Ne pas envoyer la requête si le contenu est vide
+        }
+    
         try {
             const response = await fetch('/room/update-cell-message', {
                 method: 'POST',
@@ -487,16 +493,17 @@ export class RoomBuilder {
                 },
                 body: JSON.stringify(data),
             });
-        
+    
             if (!response.ok) {
                 throw new Error('Erreur lors de la mise à jour du message de la cellule');
             }
-        
+    
             console.log('Mise à jour du message de la cellule réussie');
         } catch (error) {
             console.error('Erreur lors de la soumission automatique du formulaire :', error);
         }
     }
+    
     
 
     // Place un item dans une cellule spécifique et met à jour son apparence.

@@ -720,10 +720,18 @@ function () {
             case 0:
               messageForm = document.getElementById('message-form');
               formData = new FormData(messageForm);
-              data = Object.fromEntries(formData);
-              console.log('..... data   ' + formData);
-              _context6.prev = 4;
-              _context6.next = 7;
+              data = Object.fromEntries(formData); // Vérification si le contenu du message est bien présent
+
+              if (!(!data.messageContent || data.messageContent.trim() === '')) {
+                _context6.next = 5;
+                break;
+              }
+
+              return _context6.abrupt("return");
+
+            case 5:
+              _context6.prev = 5;
+              _context6.next = 8;
               return regeneratorRuntime.awrap(fetch('/room/update-cell-message', {
                 method: 'POST',
                 headers: {
@@ -732,32 +740,32 @@ function () {
                 body: JSON.stringify(data)
               }));
 
-            case 7:
+            case 8:
               response = _context6.sent;
 
               if (response.ok) {
-                _context6.next = 10;
+                _context6.next = 11;
                 break;
               }
 
               throw new Error('Erreur lors de la mise à jour du message de la cellule');
 
-            case 10:
+            case 11:
               console.log('Mise à jour du message de la cellule réussie');
-              _context6.next = 16;
+              _context6.next = 17;
               break;
 
-            case 13:
-              _context6.prev = 13;
-              _context6.t0 = _context6["catch"](4);
+            case 14:
+              _context6.prev = 14;
+              _context6.t0 = _context6["catch"](5);
               console.error('Erreur lors de la soumission automatique du formulaire :', _context6.t0);
 
-            case 16:
+            case 17:
             case "end":
               return _context6.stop();
           }
         }
-      }, null, null, [[4, 13]]);
+      }, null, null, [[5, 14]]);
     } // Place un item dans une cellule spécifique et met à jour son apparence.
 
   }, {
