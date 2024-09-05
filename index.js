@@ -27,7 +27,7 @@ app.set('views', path.join(__dirname, 'app/views'));
 app.use(express.static(path.join(__dirname, 'assets')));
 
 // Middleware pour parser le JSON
-app.use(express.json());
+app.use(express.json({limit: '2mb'}));
 
 // Pour analyser les requêtes POST avec des données URL-encodées
 app.use(express.urlencoded({ extended: false }));

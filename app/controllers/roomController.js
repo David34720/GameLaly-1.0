@@ -249,9 +249,57 @@ const roomController = {
             res.status(500).json({ error: 'Erreur lors de la mise à jour de la cellule.' });
         }
     },
+
+    async getMessagesForRoom(req, res) {
+        const { room_id } = req.params;
+        try {
+            // Récupérer les messages avec l'ID de la cellule associée
+            const messagesWithCellIds = await Message.findAll({
+                include: [{
+                    model: Cell,
+                    as: 'cell',
+                    where: {
+                        room_id: room_id // Filtrer par room_id dans les cellules associées
+                    },
+                    attributes: ['id'] // Ne récupérer que l'ID de la cellule
+                }]
+            });
+    
+            if (!messagesWithCellIds.length) {
+                return res.status(404).json({ error: 'Aucun message trouvé pour cette salle' });
+            }
+    
+            res.json(messagesWithCellIds);
+        } catch (error) {
+            console.error('Erreur lors de la récupération des messages pour la salle:', error);
+            res.status(500).json({ error: 'Erreur serveur lors de la récupération des messages' });
+        }
+    },
     
     
 
+    async getMessageForCell(req, res) {
+        const { cell_id } = req.params;
+        const messages = await Message.findAll({
+            where: {
+                cell_id
+            }
+        });
+        res.json(messages);
+    },
+    
+    async updateCellMessage(req, res) {
+        try {
+            const { cell_id, messageContent } = req.body;
+            console.log('Update cell data received:', req.body);
+            
+
+            res.status(200).json({ message: 'Message mis à jour avec succès' });
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour du message:', error);
+            res.status(500).json({ error: 'Erreur lors de la mise à jour du message.' });   
+        }   
+    },
     async deleteCells(req, res) {
         const cellsData = req.body;
 

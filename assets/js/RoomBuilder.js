@@ -23,6 +23,7 @@ export class RoomBuilder {
         this.playerPosition = { x: 0, y: 0 }; // Position du joueur (x, y) en pixels
         // Initialisation du GameEngine
         this.gameEngine = new GameEngine(gameConfig);
+        this.messagesForRoom = [];
         console.log("RoomBuilder initialized with:", roomData, items);
     }
 
@@ -45,6 +46,7 @@ export class RoomBuilder {
         this.setupEventListeners(); // Configure les événements utilisateur (clics, modes d'interaction, etc.).
         this.updateModeUI(); // Met à jour l'affichage de l'interface utilisateur selon le mode actif.
         this.initPlayerPosition(); // Initialise la position du joueur
+        this.getMessagesForRoom(); // initialise la liste des messages pour la room
         
         const mapContainer = document.getElementById("map-container");
         mapContainer.addEventListener('mouseleave', () => this.onMouseUp());
@@ -64,6 +66,29 @@ export class RoomBuilder {
 
         container.scrollLeft = scrollLeft;
         container.scrollTop = scrollTop;
+    }
+
+    async getMessagesForRoom() {
+        console.log('Récupération des messages pour la salle ' + this.roomData.id);
+        try {
+            const response = await fetch(`/room/get-messages-for-room/${this.roomData.id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+        
+            if (!response.ok) {
+                throw new Error('Erreur lors de la récupération des messages');
+            }
+        
+            const messages = await response.json();
+            console.log('Messages reçus:', messages);
+            this.messagesForRoom = messages;
+
+        } catch (error) {
+            console.error('Erreur lors de la récupération des messages de la salle :', error);
+        }
     }
 
 
@@ -284,67 +309,67 @@ export class RoomBuilder {
     showCellDetails(cell) {
         console.log(`Affiche les détails de la cellule : (${cell.posX}, ${cell.id})`);
         const detailsContainer = document.getElementById("cell-details");
-
-
-
-
-        ////    RECHERCHER LES MESSAGE CAR cell.id = ok
-
-
-
-
-        
+    
+        // Filtrer le message associé à cette cellule
+        const messageForCell = this.messagesForRoom.find(message => message.cell.id === cell.id);
+        const messageContent = messageForCell ? messageForCell.text : '';
+    
         detailsContainer.innerHTML = `
-    <form id="cell-edit-form">
-        <input type="hidden" name="room_id" value="${this.roomData.id}">
-        <input type="hidden" name="pos_x" value="${cell.posX}">
-        <input type="hidden" name="pos_y" value="${cell.posY}">
-        <input type="hidden" name="cell_id" value="${cell_id}">
-        
-        <!-- Sélection de l'item -->
-        <div class="mb-3">
-            <span class="badge bg-info p-3">Sélection de l'item${cell.id}</span>
-        </div>
-        <div class="mb-3">
-          <label for="item_id" class="form-label">Item</label>
-          <select class="form-select" id="item-id" name="item_id">
-            <option value="">Aucun</option>
-            ${this.items.map(item => `
-              <option value="${item.id}" ${cell.item === item.id ? 'selected' : ''}>${item.name}</option>
-            `).join('')}
-          </select>
-        </div>
-        
-        <!-- Position de la cellule -->
-        <div class="mb-3">
-            <label for="position" class="form-label">Position (x, y)</label>
-            <input type="text" class="form-control" id="position" name="position" value="(${cell.posX}, ${cell.posY})" readonly>
-        </div>
-
-        <!-- Largeur et hauteur avec des barres de défilement -->
-        <div class="mb-3">
-            <label for="width" class="form-label">Largeur</label>
-            <div class="d-flex align-items-center">
-                <input type="range" class="form-range" id="width" name="width" min="1" max="10" value="${cell.width}">
+        <form id="cell-edit-form">
+            <input type="hidden" name="room_id" value="${this.roomData.id}">
+            <input type="hidden" name="pos_x" value="${cell.posX}">
+            <input type="hidden" name="pos_y" value="${cell.posY}">
+            
+            <!-- Sélection de l'item -->
+            <div class="mb-3">
+                <span class="badge bg-info p-3">Sélection de l'item ${cell.id}</span>
             </div>
-        </div>
-        <div class="mb-3">
-            <label for="height" class="form-label">Hauteur</label>
-            <div class="d-flex align-items-center">
-                <input type="range" class="form-range" id="height" name="height" min="1" max="10" value="${cell.height}">
+            <div class="mb-3">
+              <label for="item_id" class="form-label">Item</label>
+              <select class="form-select" id="item-id" name="item_id">
+                <option value="">Aucun</option>
+                ${this.items.map(item => `
+                  <option value="${item.id}" ${cell.item === item.id ? 'selected' : ''}>${item.name}</option>
+                `).join('')}
+              </select>
             </div>
-        </div>
-
-        <!-- Message -->
-        <div class="mb-3">
-            <label for="message" class="form-label">Message</label>
-            <textarea class="form-control" id="message" name="message" rows="4">${cell.message || ''}</textarea>
-        </div>
-    </form>
-    `;
+            
+            <!-- Position de la cellule -->
+            <div class="mb-3">
+                <label for="position" class="form-label">Position (x, y)</label>
+                <input type="text" class="form-control" id="position" name="position" value="(${cell.posX}, ${cell.posY})" readonly>
+            </div>
+    
+            <!-- Largeur et hauteur avec des barres de défilement -->
+            <div class="mb-3">
+                <label for="width" class="form-label">Largeur</label>
+                <div class="d-flex align-items-center">
+                    <input type="range" class="form-range" id="width" name="width" min="1" max="10" value="${cell.width}">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="height" class="form-label">Hauteur</label>
+                <div class="d-flex align-items-center">
+                    <input type="range" class="form-range" id="height" name="height" min="1" max="10" value="${cell.height}">
+                </div>
+            </div>
+        </form>
+    
+            <!-- Message -->
+        <form id="message-form">
+            <input type="hidden" name="cell_id" value="${cell.id}">
+            <div class="mb-3">
+                <label for="messageContent" class="form-label">Message</label>
+                <textarea class="form-control" id="messageContent" name="messageContent" rows="4">${messageContent}</textarea>
+            </div>
+    
+            <button type="submit" class="btn btn-primary">Sauvegarder</button>
+        </form>
+        `;
 
         // Attachez les gestionnaires d'événements pour soumettre automatiquement le formulaire et synchroniser la largeur/hauteur
         this.attachFormListeners();
+        this.messageCellSubmitForm();
     }
 
     // Fonction pour attacher les écouteurs aux éléments du formulaire
@@ -360,15 +385,10 @@ export class RoomBuilder {
             this.autoSubmitForm(form);
         });
 
-      
-
         heightSlider.addEventListener('input', () => {
         
             this.autoSubmitForm(form);
         });
-
-        
-
         // Soumission automatique lorsque l'utilisateur modifie le formulaire
         form.addEventListener('change', () => {
             this.autoSubmitForm(form);
@@ -378,7 +398,7 @@ export class RoomBuilder {
     async autoSubmitForm(form) {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData);
-        console.log('..... data   ' + data);
+        console.log('..... data   ' + formData);
         try {
             const response = await fetch('/room/update-cell', {
                 method: 'POST',
@@ -393,6 +413,30 @@ export class RoomBuilder {
             }
     
             console.log('Mise à jour de la cellule réussie');
+        } catch (error) {
+            console.error('Erreur lors de la soumission automatique du formulaire :', error);
+        }
+    }
+
+    async messageCellSubmitForm() {
+        const messageForm = document.getElementById('message-form');
+        const formData = new FormData(messageForm);
+        const data = Object.fromEntries(formData);
+        console.log('..... data   ' + formData);
+        try {
+            const response = await fetch('/room/update-cell-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+    
+            if (!response.ok) {
+                throw new Error('Erreur lors de la mise à jour du message de la cellule');
+            }
+    
+            console.log('Mise à jour du message de la cellule réussie');
         } catch (error) {
             console.error('Erreur lors de la soumission automatique du formulaire :', error);
         }

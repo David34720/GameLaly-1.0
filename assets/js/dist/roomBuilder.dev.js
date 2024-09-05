@@ -62,6 +62,7 @@ function () {
     // Initialisation du GameEngine
 
     this.gameEngine = new _GameEngine.GameEngine(gameConfig);
+    this.messagesForRoom = [];
     console.log("RoomBuilder initialized with:", roomData, items);
   } // initialise la postion du joueur au démarrage
 
@@ -95,6 +96,8 @@ function () {
 
       this.initPlayerPosition(); // Initialise la position du joueur
 
+      this.getMessagesForRoom(); // initialise la liste des messages pour la room
+
       var mapContainer = document.getElementById("map-container");
       mapContainer.addEventListener('mouseleave', function () {
         return _this.onMouseUp();
@@ -115,6 +118,57 @@ function () {
       var scrollTop = cellCenterY - containerHeight / 2;
       container.scrollLeft = scrollLeft;
       container.scrollTop = scrollTop;
+    }
+  }, {
+    key: "getMessagesForRoom",
+    value: function getMessagesForRoom() {
+      var response, messages;
+      return regeneratorRuntime.async(function getMessagesForRoom$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              console.log('Récupération des messages pour la salle ' + this.roomData.id);
+              _context.prev = 1;
+              _context.next = 4;
+              return regeneratorRuntime.awrap(fetch("/room/get-messages-for-room/".concat(this.roomData.id), {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+              }));
+
+            case 4:
+              response = _context.sent;
+
+              if (response.ok) {
+                _context.next = 7;
+                break;
+              }
+
+              throw new Error('Erreur lors de la récupération des messages');
+
+            case 7:
+              _context.next = 9;
+              return regeneratorRuntime.awrap(response.json());
+
+            case 9:
+              messages = _context.sent;
+              console.log('Messages reçus:', messages);
+              this.messagesForRoom = messages;
+              _context.next = 17;
+              break;
+
+            case 14:
+              _context.prev = 14;
+              _context.t0 = _context["catch"](1);
+              console.error('Erreur lors de la récupération des messages de la salle :', _context.t0);
+
+            case 17:
+            case "end":
+              return _context.stop();
+          }
+        }
+      }, null, this, [[1, 14]]);
     } // Crée les cellules de la carte en fonction des données de la pièce (roomData) fournies lors de l'instanciation.
     // Les cellules sont initialisées avec leur position, leur taille, et les éventuels items ou messages.
 
@@ -329,18 +383,18 @@ function () {
       var _this4 = this;
 
       var cellsData, url, method, response, errorMessage;
-      return regeneratorRuntime.async(function saveSelectedCells$(_context) {
+      return regeneratorRuntime.async(function saveSelectedCells$(_context2) {
         while (1) {
-          switch (_context.prev = _context.next) {
+          switch (_context2.prev = _context2.next) {
             case 0:
               if (!(this.selectedCells.size === 0 || this.isSaving)) {
-                _context.next = 3;
+                _context2.next = 3;
                 break;
               }
 
               // Vérifie si des cellules sont sélectionnées et qu'aucune sauvegarde n'est en cours.
               console.warn('Aucune cellule sélectionnée pour la sauvegarde ou suppression ou sauvegarde déjà en cours.');
-              return _context.abrupt("return");
+              return _context2.abrupt("return");
 
             case 3:
               this.isSaving = true; // Empêche les sauvegardes répétées.
@@ -380,8 +434,8 @@ function () {
                 method = 'DELETE'; // Méthode HTTP pour la suppression
               }
 
-              _context.prev = 8;
-              _context.next = 11;
+              _context2.prev = 8;
+              _context2.next = 11;
               return regeneratorRuntime.awrap(fetch(url, {
                 method: method,
                 headers: {
@@ -392,18 +446,18 @@ function () {
               }));
 
             case 11:
-              response = _context.sent;
+              response = _context2.sent;
 
               if (response.ok) {
-                _context.next = 17;
+                _context2.next = 17;
                 break;
               }
 
-              _context.next = 15;
+              _context2.next = 15;
               return regeneratorRuntime.awrap(response.text());
 
             case 15:
-              errorMessage = _context.sent;
+              errorMessage = _context2.sent;
               throw new Error("Erreur lors de la ".concat(this.mode === 'delete' ? 'suppression' : 'sauvegarde', " des cellules: ").concat(errorMessage));
 
             case 17:
@@ -414,23 +468,23 @@ function () {
 
               this.renderMap(); // Réaffiche la carte avec les modifications.
 
-              _context.next = 26;
+              _context2.next = 26;
               break;
 
             case 23:
-              _context.prev = 23;
-              _context.t0 = _context["catch"](8);
-              console.error('Erreur:', _context.t0);
+              _context2.prev = 23;
+              _context2.t0 = _context2["catch"](8);
+              console.error('Erreur:', _context2.t0);
 
             case 26:
-              _context.prev = 26;
+              _context2.prev = 26;
               this.isSaving = false; // Réinitialise l'indicateur de sauvegarde.
 
-              return _context.finish(26);
+              return _context2.finish(26);
 
             case 29:
             case "end":
-              return _context.stop();
+              return _context2.stop();
           }
         }
       }, null, this, [[8, 23, 26, 29]]);
@@ -475,13 +529,18 @@ function () {
     key: "showCellDetails",
     value: function showCellDetails(cell) {
       console.log("Affiche les d\xE9tails de la cellule : (".concat(cell.posX, ", ").concat(cell.id, ")"));
-      var detailsContainer = document.getElementById("cell-details"); ////    RECHERCHER LES MESSAGE CAR cell.id = ok
+      var detailsContainer = document.getElementById("cell-details"); // Filtrer le message associé à cette cellule
 
-      detailsContainer.innerHTML = "\n    <form id=\"cell-edit-form\">\n        <input type=\"hidden\" name=\"room_id\" value=\"".concat(this.roomData.id, "\">\n        <input type=\"hidden\" name=\"pos_x\" value=\"").concat(cell.posX, "\">\n        <input type=\"hidden\" name=\"pos_y\" value=\"").concat(cell.posY, "\">\n        <input type=\"hidden\" name=\"cell_id\" value=\"").concat(cell_id, "\">\n        \n        <!-- S\xE9lection de l'item -->\n        <div class=\"mb-3\">\n            <span class=\"badge bg-info p-3\">S\xE9lection de l'item").concat(cell.id, "</span>\n        </div>\n        <div class=\"mb-3\">\n          <label for=\"item_id\" class=\"form-label\">Item</label>\n          <select class=\"form-select\" id=\"item-id\" name=\"item_id\">\n            <option value=\"\">Aucun</option>\n            ").concat(this.items.map(function (item) {
-        return "\n              <option value=\"".concat(item.id, "\" ").concat(cell.item === item.id ? 'selected' : '', ">").concat(item.name, "</option>\n            ");
-      }).join(''), "\n          </select>\n        </div>\n        \n        <!-- Position de la cellule -->\n        <div class=\"mb-3\">\n            <label for=\"position\" class=\"form-label\">Position (x, y)</label>\n            <input type=\"text\" class=\"form-control\" id=\"position\" name=\"position\" value=\"(").concat(cell.posX, ", ").concat(cell.posY, ")\" readonly>\n        </div>\n\n        <!-- Largeur et hauteur avec des barres de d\xE9filement -->\n        <div class=\"mb-3\">\n            <label for=\"width\" class=\"form-label\">Largeur</label>\n            <div class=\"d-flex align-items-center\">\n                <input type=\"range\" class=\"form-range\" id=\"width\" name=\"width\" min=\"1\" max=\"10\" value=\"").concat(cell.width, "\">\n            </div>\n        </div>\n        <div class=\"mb-3\">\n            <label for=\"height\" class=\"form-label\">Hauteur</label>\n            <div class=\"d-flex align-items-center\">\n                <input type=\"range\" class=\"form-range\" id=\"height\" name=\"height\" min=\"1\" max=\"10\" value=\"").concat(cell.height, "\">\n            </div>\n        </div>\n\n        <!-- Message -->\n        <div class=\"mb-3\">\n            <label for=\"message\" class=\"form-label\">Message</label>\n            <textarea class=\"form-control\" id=\"message\" name=\"message\" rows=\"4\">").concat(cell.message || '', "</textarea>\n        </div>\n    </form>\n    "); // Attachez les gestionnaires d'événements pour soumettre automatiquement le formulaire et synchroniser la largeur/hauteur
+      var messageForCell = this.messagesForRoom.find(function (message) {
+        return message.cell.id === cell.id;
+      });
+      var messageContent = messageForCell ? messageForCell.text : '';
+      detailsContainer.innerHTML = "\n        <form id=\"cell-edit-form\">\n            <input type=\"hidden\" name=\"room_id\" value=\"".concat(this.roomData.id, "\">\n            <input type=\"hidden\" name=\"pos_x\" value=\"").concat(cell.posX, "\">\n            <input type=\"hidden\" name=\"pos_y\" value=\"").concat(cell.posY, "\">\n            \n            <!-- S\xE9lection de l'item -->\n            <div class=\"mb-3\">\n                <span class=\"badge bg-info p-3\">S\xE9lection de l'item ").concat(cell.id, "</span>\n            </div>\n            <div class=\"mb-3\">\n              <label for=\"item_id\" class=\"form-label\">Item</label>\n              <select class=\"form-select\" id=\"item-id\" name=\"item_id\">\n                <option value=\"\">Aucun</option>\n                ").concat(this.items.map(function (item) {
+        return "\n                  <option value=\"".concat(item.id, "\" ").concat(cell.item === item.id ? 'selected' : '', ">").concat(item.name, "</option>\n                ");
+      }).join(''), "\n              </select>\n            </div>\n            \n            <!-- Position de la cellule -->\n            <div class=\"mb-3\">\n                <label for=\"position\" class=\"form-label\">Position (x, y)</label>\n                <input type=\"text\" class=\"form-control\" id=\"position\" name=\"position\" value=\"(").concat(cell.posX, ", ").concat(cell.posY, ")\" readonly>\n            </div>\n    \n            <!-- Largeur et hauteur avec des barres de d\xE9filement -->\n            <div class=\"mb-3\">\n                <label for=\"width\" class=\"form-label\">Largeur</label>\n                <div class=\"d-flex align-items-center\">\n                    <input type=\"range\" class=\"form-range\" id=\"width\" name=\"width\" min=\"1\" max=\"10\" value=\"").concat(cell.width, "\">\n                </div>\n            </div>\n            <div class=\"mb-3\">\n                <label for=\"height\" class=\"form-label\">Hauteur</label>\n                <div class=\"d-flex align-items-center\">\n                    <input type=\"range\" class=\"form-range\" id=\"height\" name=\"height\" min=\"1\" max=\"10\" value=\"").concat(cell.height, "\">\n                </div>\n            </div>\n        </form>\n    \n            <!-- Message -->\n        <form id=\"message-form\">\n            <input type=\"hidden\" name=\"cell_id\" value=\"").concat(cell.id, "\">\n            <div class=\"mb-3\">\n                <label for=\"messageContent\" class=\"form-label\">Message</label>\n                <textarea class=\"form-control\" id=\"messageContent\" name=\"messageContent\" rows=\"4\">").concat(messageContent, "</textarea>\n            </div>\n    \n            <button type=\"submit\" class=\"btn btn-primary\">Sauvegarder</button>\n        </form>\n        "); // Attachez les gestionnaires d'événements pour soumettre automatiquement le formulaire et synchroniser la largeur/hauteur
 
       this.attachFormListeners();
+      this.messageCellSubmitForm();
     } // Fonction pour attacher les écouteurs aux éléments du formulaire
 
   }, {
@@ -508,15 +567,15 @@ function () {
     key: "autoSubmitForm",
     value: function autoSubmitForm(form) {
       var formData, data, response;
-      return regeneratorRuntime.async(function autoSubmitForm$(_context2) {
+      return regeneratorRuntime.async(function autoSubmitForm$(_context3) {
         while (1) {
-          switch (_context2.prev = _context2.next) {
+          switch (_context3.prev = _context3.next) {
             case 0:
               formData = new FormData(form);
               data = Object.fromEntries(formData);
-              console.log('..... data   ' + data);
-              _context2.prev = 3;
-              _context2.next = 6;
+              console.log('..... data   ' + formData);
+              _context3.prev = 3;
+              _context3.next = 6;
               return regeneratorRuntime.awrap(fetch('/room/update-cell', {
                 method: 'POST',
                 headers: {
@@ -526,10 +585,10 @@ function () {
               }));
 
             case 6:
-              response = _context2.sent;
+              response = _context3.sent;
 
               if (response.ok) {
-                _context2.next = 9;
+                _context3.next = 9;
                 break;
               }
 
@@ -537,20 +596,69 @@ function () {
 
             case 9:
               console.log('Mise à jour de la cellule réussie');
-              _context2.next = 15;
+              _context3.next = 15;
               break;
 
             case 12:
-              _context2.prev = 12;
-              _context2.t0 = _context2["catch"](3);
-              console.error('Erreur lors de la soumission automatique du formulaire :', _context2.t0);
+              _context3.prev = 12;
+              _context3.t0 = _context3["catch"](3);
+              console.error('Erreur lors de la soumission automatique du formulaire :', _context3.t0);
 
             case 15:
             case "end":
-              return _context2.stop();
+              return _context3.stop();
           }
         }
       }, null, null, [[3, 12]]);
+    }
+  }, {
+    key: "messageCellSubmitForm",
+    value: function messageCellSubmitForm() {
+      var messageForm, formData, data, response;
+      return regeneratorRuntime.async(function messageCellSubmitForm$(_context4) {
+        while (1) {
+          switch (_context4.prev = _context4.next) {
+            case 0:
+              messageForm = document.getElementById('message-form');
+              formData = new FormData(messageForm);
+              data = Object.fromEntries(formData);
+              console.log('..... data   ' + formData);
+              _context4.prev = 4;
+              _context4.next = 7;
+              return regeneratorRuntime.awrap(fetch('/room/update-cell-message', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+              }));
+
+            case 7:
+              response = _context4.sent;
+
+              if (response.ok) {
+                _context4.next = 10;
+                break;
+              }
+
+              throw new Error('Erreur lors de la mise à jour du message de la cellule');
+
+            case 10:
+              console.log('Mise à jour du message de la cellule réussie');
+              _context4.next = 16;
+              break;
+
+            case 13:
+              _context4.prev = 13;
+              _context4.t0 = _context4["catch"](4);
+              console.error('Erreur lors de la soumission automatique du formulaire :', _context4.t0);
+
+            case 16:
+            case "end":
+              return _context4.stop();
+          }
+        }
+      }, null, null, [[4, 13]]);
     } // Place un item dans une cellule spécifique et met à jour son apparence.
 
   }, {
@@ -662,29 +770,29 @@ function () {
       var selectModeButton = document.getElementById("toggle-select-mode-button");
       var mapContainer = document.getElementById("map-container");
       playModeButton.addEventListener('click', function _callee() {
-        return regeneratorRuntime.async(function _callee$(_context3) {
+        return regeneratorRuntime.async(function _callee$(_context5) {
           while (1) {
-            switch (_context3.prev = _context3.next) {
+            switch (_context5.prev = _context5.next) {
               case 0:
                 _this8.changeMode('play'); // Appeler initializeGame et attendre qu'il termine
 
 
-                _context3.prev = 1;
-                _context3.next = 4;
+                _context5.prev = 1;
+                _context5.next = 4;
                 return regeneratorRuntime.awrap(_this8.gameEngine.initializeGame());
 
               case 4:
-                _context3.next = 9;
+                _context5.next = 9;
                 break;
 
               case 6:
-                _context3.prev = 6;
-                _context3.t0 = _context3["catch"](1);
-                console.error("Erreur lors de l'initialisation du jeu:", _context3.t0);
+                _context5.prev = 6;
+                _context5.t0 = _context5["catch"](1);
+                console.error("Erreur lors de l'initialisation du jeu:", _context5.t0);
 
               case 9:
               case "end":
-                return _context3.stop();
+                return _context5.stop();
             }
           }
         }, null, null, [[1, 6]]);
