@@ -17,6 +17,7 @@
     <div style="width: 100px;"></div> <!-- Ajustez cette largeur si nécessaire -->
   </div>
   
+  
   <!-- Formulaire pour éditer la Room en ligne -->
   <form action="/rooms/update/<%= room.id %>" method="POST" class="row g-2 mb-4">
     <div class="col-md-1">
@@ -82,13 +83,20 @@
 
     <!-- Colonne gauche : Liste des items -->
     <div class="col-md-2 bg-light p-3 sidebar-left">
+      <h5 class="text-center small">Mode</h5>
       <div class="d-flex gap-2 justify-content-center" style="height: 70px;">
-        <button id="toggle-play-mode-button" class="btn btn-success mb-3 btn_state">Jouer</button>
+        <button id="toggle-play-mode-button" class="btn btn-success mb-3 btn_state-large">Jouer</button>
       </div>
       <div class="d-flex gap-2 justify-content-center" style="height: 70px;">
-        <button id="toggle-delete-mode-button" class="btn btn-danger mb-3 btn_state">Suppression</button>
-        <button id="toggle-insert-mode-button" class="btn btn-primary mb-3 btn_state">Insertion</button>
-        <button id="toggle-select-mode-button" class="btn btn-secondary mb-3 btn_state">Sélection</button>
+        <button id="toggle-delete-mode-button" class="btn btn-danger mb-3 btn_state xx-small" >Suppression</button>
+        <button id="toggle-insert-mode-button" class="btn btn-primary mb-3 btn_state small">Insertion</button>
+        <button id="toggle-select-mode-button" class="btn btn-secondary mb-3 btn_state small">Sélection</button>
+      </div>
+      <h5 class="text-center small">layer</h5>
+      <div class="d-flex gap-2 justify-content-center" style="height: 70px;">
+        <button id="toggle-layerElement-mode-button" class="btn btn-warning mb-3 btn_state small">Element</button>
+        <button id="toggle-layerObject-mode-button" class="btn btn-info mb-3 btn_state small">Objet</button>
+        <button id="toggle-layerCharacter-mode-button" class="btn btn-dark mb-3 btn_state small">Personnage</button>
       </div>
       <div id="item-list">
         <h5>Liste des Items</h5>
@@ -97,7 +105,7 @@
 
     <!-- Colonne centrale : Grille de la room -->
     <div class="col-md-8 d-flex justify-content-center">
-      <div id="map-container" class="border" style="position: relative; width: fit-content;" tabindex="0">
+      <div id="map-container" class="border"  tabindex="0">
         <!-- La map sera générée ici via du JavaScript -->
       </div>
     </div>

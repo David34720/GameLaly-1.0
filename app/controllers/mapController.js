@@ -5,7 +5,7 @@ const mapController = {
     async index(req, res) { //route / (page index)
         
         const maps = await Map.findAll();
-        ;
+        
         const notification = req.session.notification || null;
         req.session.notification = null; 
 

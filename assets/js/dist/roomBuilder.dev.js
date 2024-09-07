@@ -15,6 +15,12 @@ function _iterableToArrayLimit(arr, i) { if (!(Symbol.iterator in Object(arr) ||
 
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(source, true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(source).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
@@ -46,6 +52,8 @@ function () {
     this.selectedItem = null; // Item actuellement sélectionné pour insertion dans une cellule
 
     this.mode = 'select'; // Mode courant : 'select', 'insert', ou 'delete'
+
+    this.layer = 'element'; // Layer courant : 'objet', 'character', ou 'element'
 
     this.selectedCells = new Set(); // Ensemble des cellules sélectionnées
 
@@ -229,46 +237,81 @@ function () {
       var _this$roomData = this.roomData,
           nb_rows = _this$roomData.nb_rows,
           nb_cols = _this$roomData.nb_cols,
-          cell_size = _this$roomData.cell_size; // Récupère les dimensions et la taille des cellules depuis roomData.
+          cell_size = _this$roomData.cell_size; // Créer 3 layers pour les différents types d'items
+
+      this.layerCharacters = []; // Items où item_type === 9 (personnages)
+
+      this.layerObjects = []; // Items où is_object === true (objets)
+
+      this.layerElements = []; // Les autres items ou cellules vides
+      // Crée les cellules
 
       var _loop = function _loop(y) {
         var _loop2 = function _loop2(x) {
-          var cell = {
+          var baseCell = {
             x: x * cell_size,
-            // Position en pixels sur l'axe X
             y: y * cell_size,
-            // Position en pixels sur l'axe Y
             posX: x,
-            // Position en colonnes
             posY: y,
-            // Position en lignes
             exists: false,
-            // Indique si la cellule contient un item ou un message
             item: null,
-            // ID de l'item dans la cellule (null si aucun)
-            message: null // ID du message dans la cellule (null si aucun)
-
+            message: null,
+            layer_type: 'default'
           };
 
-          var existingCell = _this2.roomData.cells.find(function (c) {
+          var cellsFinded = _this2.roomData.cells.filter(function (c) {
             return c.pos_x === x && c.pos_y === y;
-          }); // Vérifie si une cellule existe déjà à cette position.
+          });
+
+          if (cellsFinded.length > 0) {
+            cellsFinded.forEach(function (c) {
+              var cell = _objectSpread({}, baseCell); // Clone the baseCell for each layer
 
 
-          if (existingCell) {
-            console.log("Cellule existante:", existingCell);
-            cell.exists = true; // Marque la cellule comme existante.
+              cell.exists = true;
+              cell.item = c.item_id;
+              cell.message = c.message_id;
+              cell.id = c.id;
 
-            cell.item = existingCell.item_id; // Associe l'item existant à la cellule.
+              var item = _this2.items.find(function (i) {
+                return i.id === cell.item;
+              });
 
-            cell.message = existingCell.message_id; // Associe le message existant à la cellule.
+              if (item) {
+                if (item.item_type === 9) {
+                  cell.layer_type = 'personnage';
 
-            cell.id = existingCell.id;
-            console.log("Cellule existante IDDDDDD:", cell);
+                  _this2.layerCharacters.push(cell);
+                } else if (item.is_object) {
+                  cell.layer_type = 'object';
+
+                  _this2.layerObjects.push(cell);
+                } else {
+                  cell.layer_type = 'element';
+
+                  _this2.layerElements.push(cell);
+                }
+              }
+
+              _this2.cells.push(cell);
+            });
+          } else {
+            var emptyCell = _objectSpread({}, baseCell);
+
+            emptyCell.layer_type = 'element'; // Default to elements for empty cells
+
+            _this2.layerElements.push(emptyCell);
+
+            _this2.layerObjects.push(_objectSpread({}, baseCell, {
+              layer_type: 'object'
+            }));
+
+            _this2.layerCharacters.push(_objectSpread({}, baseCell, {
+              layer_type: 'personnage'
+            }));
+
+            _this2.cells.push(emptyCell);
           }
-
-          _this2.cells.push(cell); // Ajoute la cellule au tableau des cellules.
-
         };
 
         for (var x = 0; x < nb_cols; x++) {
@@ -285,44 +328,58 @@ function () {
   }, {
     key: "renderMap",
     value: function renderMap() {
-      var _this3 = this;
-
       var mapContainer = document.getElementById("map-container");
       mapContainer.innerHTML = ""; // Vide le conteneur pour le réinitialiser.
 
-      mapContainer.style.display = "grid";
-      mapContainer.style.gridTemplateColumns = "repeat(".concat(this.roomData.nb_cols, ", ").concat(this.roomData.cell_size, "px)"); // Définit le nombre de colonnes et la taille des cellules.
+      var mapContainerCharacters = document.createElement("div");
+      mapContainerCharacters.id = "map-container-characters";
+      mapContainerCharacters.className = "map-layer";
+      mapContainer.appendChild(mapContainerCharacters);
+      var mapContainerObjects = document.createElement("div");
+      mapContainerObjects.id = "map-container-objects";
+      mapContainerObjects.className = "map-layer";
+      mapContainer.appendChild(mapContainerObjects);
+      var mapContainerElements = document.createElement("div");
+      mapContainerElements.id = "map-container-elements";
+      mapContainerElements.className = "map-layer";
+      mapContainer.appendChild(mapContainerElements); // Display la carte des personnages
 
-      mapContainer.style.gridTemplateRows = "repeat(".concat(this.roomData.nb_rows, ", ").concat(this.roomData.cell_size, "px)"); // Définit le nombre de lignes et la taille des cellules.
+      this.renderLayerMap(this.layerCharacters, mapContainerCharacters, "#FFDD57"); // Personnages
+      // Display la carte des objets
 
-      this.cells.forEach(function (cell) {
-        var cellElement = document.createElement("div"); // Crée un élément HTML pour chaque cellule.
+      this.renderLayerMap(this.layerObjects, mapContainerObjects, "#8FBC8F"); // Objets
+      // Display la carte des éléments
 
-        cellElement.className = "cell"; // Ajoute la classe CSS pour le style de la cellule.
+      this.renderLayerMap(this.layerElements, mapContainerElements, "#ADD8E6"); // Autres
+    } // Fonction utilisée pour afficher un layer particulier
+    // Fonction pour afficher un layer particulier (éléments, objets, personnages)
 
-        cellElement.style.width = "".concat(_this3.roomData.cell_size, "px"); // Définit la largeur de la cellule.
+  }, {
+    key: "renderLayerMap",
+    value: function renderLayerMap(layer, container, color) {
+      var _this3 = this;
 
-        cellElement.style.height = "".concat(_this3.roomData.cell_size, "px"); // Définit la hauteur de la cellule.
+      var cell_size = this.roomData.cell_size; // On efface d'abord tout ce qui existe dans le container
 
-        cellElement.style.boxSizing = "border-box"; // Assure que le padding et la bordure sont inclus dans la taille totale.
+      container.innerHTML = '';
+      layer.forEach(function (cell) {
+        var cellElement = document.createElement("div");
+        cellElement.className = "cell";
+        cellElement.style.width = "".concat(cell_size, "px");
+        cellElement.style.height = "".concat(cell_size, "px");
+        cellElement.style.border = "1px solid #ccc";
+        cellElement.style.backgroundColor = color; // Utilisation de position absolute pour positionner les cellules
 
-        cellElement.style.border = "1px solid #ccc"; // Ajoute une bordure aux cellules.
+        cellElement.style.position = "absolute";
+        cellElement.style.left = "".concat(cell.posX * cell_size, "px");
+        cellElement.style.top = "".concat(cell.posY * cell_size, "px");
+        console.log('layer', cell.layer_type, cell); // Afficher l'item si la cellule contient un item
 
-        if (cell.exists) {
-          cellElement.style.backgroundColor = "#007bff"; // Change la couleur de fond pour les cellules existantes.
-
-          if (cell.item) {
-            _this3.renderItemInCell(cellElement, cell.item); // Affiche l'item dans la cellule si elle en contient un.
-
-
-            cellElement.style.border = "0px solid #ccc";
-          }
-        } else {
-          cellElement.style.backgroundColor = "#fff"; // Couleur de fond pour les cellules vides.
+        if (cell.exists && cell.item) {
+          _this3.renderItemInCell(cellElement, cell.item);
         }
 
-        mapContainer.appendChild(cellElement); // Ajoute l'élément cellule au conteneur.
-        // Ajoute des événements pour gérer les interactions utilisateur (clics et survol).
+        container.appendChild(cellElement); // Ajout des événements d'interaction pour chaque cellule
 
         cellElement.addEventListener('mousedown', function () {
           return _this3.onMouseDown(cell, cellElement);
@@ -331,9 +388,6 @@ function () {
           return _this3.onMouseOver(cell, cellElement);
         });
       });
-      document.addEventListener('mouseup', function () {
-        return _this3.onMouseUp();
-      }); // Ajoute un événement global pour gérer la fin du clic.
     } // Gère le clic initial sur une cellule, en fonction du mode courant (sélection, insertion, suppression).
 
   }, {
@@ -341,10 +395,10 @@ function () {
     value: function onMouseDown(cell, cellElement) {
       this.isMouseDown = true; // Marque le début d'une interaction par clic.
 
-      this.handleCellInteraction(cell, cellElement); // Gère l'interaction avec la cellule en fonction du mode.
+      this.handleCellInteraction(cell, cellElement); // Gère l'interaction avec la cellule.
 
       cellElement.classList.add('hovered'); // Ajoute une classe CSS pour indiquer que la cellule est survolée.
-    } // Gère le survol d'une cellule lors du clic maintenu, en fonction du mode courant.
+    } // Gère le survol des cellules pendant que la souris est enfoncée
 
   }, {
     key: "onMouseOver",
@@ -353,17 +407,19 @@ function () {
 
       this.handleCellInteraction(cell, cellElement); // Gère l'interaction avec la cellule en fonction du mode.
 
-      cellElement.classList.add('hovered'); // Ajoute une classe CSS pour indiquer que la cellule est survolée.
-    } // Gère la fin du clic en réinitialisant les états et en déclenchant la sauvegarde des cellules sélectionnées.
+      cellElement.classList.add('hovered');
+    } // Gère la fin du clic
 
   }, {
     key: "onMouseUp",
     value: function onMouseUp() {
-      this.isMouseDown = false; // Marque la fin de l'interaction par clic.
+      if (this.isMouseDown) {
+        this.isMouseDown = false; // Marque la fin de l'interaction par clic.
 
-      this.clearHoveredCells(); // Supprime les styles des cellules survolées.
+        this.clearHoveredCells(); // Réinitialise les styles de survol.
 
-      this.saveSelectedCells(); // Sauvegarde les cellules sélectionnées dans la base de données.
+        this.saveSelectedCells(); // Sauvegarde les cellules sélectionnées.
+      }
     } // Supprime les styles des cellules survolées pour réinitialiser leur apparence.
 
   }, {
@@ -380,27 +436,56 @@ function () {
     key: "handleCellInteraction",
     value: function handleCellInteraction(cell, cellElement) {
       var cellKey = "".concat(cell.posX, "-").concat(cell.posY); // Clé unique pour identifier chaque cellule.
+      // Choisissez le bon layer en fonction du layer actif
+
+      var layerCells;
+
+      switch (this.layer) {
+        case 'element':
+          layerCells = this.layerElements;
+          break;
+
+        case 'object':
+          layerCells = this.layerObjects;
+          break;
+
+        case 'character':
+          layerCells = this.layerCharacters;
+          break;
+
+        default:
+          layerCells = this.cells;
+          break;
+      } // Vérifiez si la cellule fait partie du layer courant
+
+
+      var layerCell = layerCells.find(function (lCell) {
+        return lCell.posX === cell.posX && lCell.posY === cell.posY;
+      });
+      if (!layerCell) return; // Si la cellule n'appartient pas au layer actuel, on ne fait rien
+      // Sélection de cellule
 
       if (this.mode === 'select') {
-        this.selectCell(cell); // Sélectionne la cellule pour afficher ses détails.
+        this.selectCell(layerCell); // Sélectionne la cellule pour afficher ses détails
 
-        console.log('handleInrecation', cell);
         return;
-      }
+      } // Insertion d'un item
+
 
       if (this.mode === 'insert' && this.selectedItem) {
-        this.placeItemInCell(cell, this.selectedItem.id); // Insère un item dans la cellule.
+        this.placeItemInCell(layerCell, this.selectedItem.id); // Insère un item dans la cellule
 
-        this.selectedCells.add(cellKey); // Ajoute la cellule sélectionnée à l'ensemble des cellules à sauvegarder.
+        this.selectedCells.add(cellKey); // Ajoute la cellule sélectionnée à l'ensemble des cellules à sauvegarder
 
-        cellElement.style.backgroundColor = "#007bff"; // Changement de couleur immédiat pour indiquer l'insertion.
-      } else if (this.mode === 'delete' && cell.exists) {
-        this.deleteCell(cell); // Supprime l'item ou le message de la cellule.
+        cellElement.style.backgroundColor = "#007bff"; // Indication visuelle
+      } // Suppression d'un item
+      else if (this.mode === 'delete' && layerCell.exists) {
+          this.deleteCell(layerCell); // Supprime l'item ou le message de la cellule
 
-        this.selectedCells.add(cellKey); // Ajoute la cellule sélectionnée à l'ensemble des cellules à sauvegarder.
+          this.selectedCells.add(cellKey); // Ajoute la cellule sélectionnée à l'ensemble des cellules à sauvegarder
 
-        cellElement.style.backgroundColor = "#fff"; // Changement de couleur immédiat pour indiquer la suppression.
-      }
+          cellElement.style.backgroundColor = "#fff"; // Indication visuelle
+        }
     } // Met à jour l'apparence d'une cellule spécifique après modification (insertion ou suppression d'item).
     // Met à jour l'apparence d'une cellule spécifique après modification (insertion ou suppression d'item).
 
@@ -431,7 +516,7 @@ function () {
     value: function saveSelectedCells() {
       var _this4 = this;
 
-      var cellsData, url, method, response, errorMessage;
+      var layerCells, layer_type, cellsData, url, method, response, errorMessage;
       return regeneratorRuntime.async(function saveSelectedCells$(_context3) {
         while (1) {
           switch (_context3.prev = _context3.next) {
@@ -446,20 +531,50 @@ function () {
               return _context3.abrupt("return");
 
             case 3:
+              console.log('selectedCells:', this.selectedCells);
               this.isSaving = true; // Empêche les sauvegardes répétées.
+              // Selection du layer actif
 
+              _context3.t0 = this.layer;
+              _context3.next = _context3.t0 === 'element' ? 8 : _context3.t0 === 'object' ? 11 : _context3.t0 === 'character' ? 14 : 17;
+              break;
+
+            case 8:
+              layerCells = this.layerElements;
+              layer_type = 'element';
+              return _context3.abrupt("break", 20);
+
+            case 11:
+              layerCells = this.layerObjects;
+              layer_type = 'object';
+              return _context3.abrupt("break", 20);
+
+            case 14:
+              layerCells = this.layerCharacters;
+              layer_type = 'character';
+              return _context3.abrupt("break", 20);
+
+            case 17:
+              layerCells = this.cells;
+              layer_type = 'default';
+              return _context3.abrupt("break", 20);
+
+            case 20:
               cellsData = Array.from(this.selectedCells).map(function (key) {
+                console.log('cellData key:', key);
+
                 var _key$split$map = key.split('-').map(Number),
                     _key$split$map2 = _slicedToArray(_key$split$map, 2),
                     posX = _key$split$map2[0],
                     posY = _key$split$map2[1]; // Récupère les coordonnées de la cellule à partir de la clé.
+                // switch ()
 
 
-                var cell = _this4.cells.find(function (c) {
+                var cell = layerCells.find(function (c) {
                   return c.posX === posX && c.posY === posY;
                 }); // Trouve la cellule correspondante.
 
-
+                console.log('cellData', cell);
                 return {
                   room_id: _this4.roomData.id,
                   // Identifiant de la pièce.
@@ -469,8 +584,9 @@ function () {
                   // Coordonnée Y de la cellule.
                   item_id: cell.exists ? cell.item : null,
                   // Identifiant de l'item (null si aucun).
-                  message_id: cell.exists ? cell.message : null // Identifiant du message (null si aucun).
-
+                  message_id: cell.exists ? cell.message : null,
+                  // Identifiant du message (null si aucun).
+                  layer_type: layer_type
                 };
               });
               url = '/rooms/save-cells'; // URL par défaut pour l'insertion
@@ -483,8 +599,8 @@ function () {
                 method = 'DELETE'; // Méthode HTTP pour la suppression
               }
 
-              _context3.prev = 8;
-              _context3.next = 11;
+              _context3.prev = 24;
+              _context3.next = 27;
               return regeneratorRuntime.awrap(fetch(url, {
                 method: method,
                 headers: {
@@ -494,22 +610,22 @@ function () {
 
               }));
 
-            case 11:
+            case 27:
               response = _context3.sent;
 
               if (response.ok) {
-                _context3.next = 17;
+                _context3.next = 33;
                 break;
               }
 
-              _context3.next = 15;
+              _context3.next = 31;
               return regeneratorRuntime.awrap(response.text());
 
-            case 15:
+            case 31:
               errorMessage = _context3.sent;
               throw new Error("Erreur lors de la ".concat(this.mode === 'delete' ? 'suppression' : 'sauvegarde', " des cellules: ").concat(errorMessage));
 
-            case 17:
+            case 33:
               console.log("Les cellules ont \xE9t\xE9 ".concat(this.mode === 'delete' ? 'supprimées' : 'sauvegardées', " avec succ\xE8s."));
               this.selectedCells.clear(); // Réinitialise l'ensemble des cellules sélectionnées.
 
@@ -517,45 +633,47 @@ function () {
 
               this.renderMap(); // Réaffiche la carte avec les modifications.
 
-              _context3.next = 26;
+              _context3.next = 42;
               break;
 
-            case 23:
-              _context3.prev = 23;
-              _context3.t0 = _context3["catch"](8);
-              console.error('Erreur:', _context3.t0);
+            case 39:
+              _context3.prev = 39;
+              _context3.t1 = _context3["catch"](24);
+              console.error('Erreur:', _context3.t1);
 
-            case 26:
-              _context3.prev = 26;
+            case 42:
+              _context3.prev = 42;
               this.isSaving = false; // Réinitialise l'indicateur de sauvegarde.
 
-              return _context3.finish(26);
+              return _context3.finish(42);
 
-            case 29:
+            case 45:
             case "end":
               return _context3.stop();
           }
         }
-      }, null, this, [[8, 23, 26, 29]]);
+      }, null, this, [[24, 39, 42, 45]]);
     } // Met à jour les cellules après la sauvegarde pour refléter les modifications.
 
   }, {
     key: "updateCellsAfterSave",
     value: function updateCellsAfterSave(cellsData) {
-      var _this5 = this;
+      var layerCells = this.getLayerCells(); // Récupère les cellules du layer actif
+
+      var layerType = this.layer; // Récupère le type de layer actif (element, object, character)
 
       cellsData.forEach(function (data) {
-        var cell = _this5.cells.find(function (c) {
-          return c.posX === data.pos_x && c.posY === data.pos_y;
-        }); // Trouve la cellule correspondante.
-
+        // Trouve la cellule dans le layer actuel, en utilisant posX, posY et le layer_type
+        var cell = layerCells.find(function (c) {
+          return c.posX === data.pos_x && c.posY === data.pos_y && c.layer_type === layerType;
+        });
 
         if (cell) {
-          cell.exists = data.item_id !== null; // Met à jour l'existence de l'item dans la cellule.
+          // Si l'item_id n'est pas null, on définit exists à true, sinon à false
+          cell.exists = data.item_id !== null; // Met à jour l'item et le message dans la cellule
 
-          cell.item = data.item_id; // Met à jour l'item dans la cellule.
-
-          cell.message = data.message_id; // Met à jour le message dans la cellule.
+          cell.item = data.item_id;
+          cell.message = data.message_id;
         }
       });
     } // Sélectionne une cellule et affiche ses détails dans l'interface utilisateur.
@@ -567,9 +685,18 @@ function () {
       this.showCellDetails(cell); // Affiche les détails de la cellule sélectionnée.
 
       if (cell.exists && cell.item) {
-        this.highlightSelectedItem(this.items.find(function (item) {
+        var selectedItem = this.items.find(function (item) {
           return item.id === cell.item;
-        })); // Met en évidence l'item sélectionné.
+        }); // Trouve l'objet item correspondant à l'ID
+
+        if (selectedItem) {
+          this.selectedItem = selectedItem; // Définit l'item sélectionné
+
+          console.log("S\xE9lection de l'item : ".concat(selectedItem.name));
+          this.highlightSelectedItem(selectedItem); // Met en évidence l'item dans la liste si besoin
+        } else {
+          console.error("Item avec ID ".concat(cell.item, " non trouv\xE9."));
+        }
       }
     } // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
@@ -621,7 +748,7 @@ function () {
   }, {
     key: "attachFormListeners",
     value: function attachFormListeners() {
-      var _this6 = this;
+      var _this5 = this;
 
       var form = document.getElementById('cell-edit-form');
 
@@ -636,7 +763,7 @@ function () {
 
       if (widthSlider) {
         widthSlider.addEventListener('input', function () {
-          _this6.autoSubmitForm(form);
+          _this5.autoSubmitForm(form);
         });
       } else {
         console.warn('Le slider de largeur est introuvable.');
@@ -644,7 +771,7 @@ function () {
 
       if (heightSlider) {
         heightSlider.addEventListener('input', function () {
-          _this6.autoSubmitForm(form);
+          _this5.autoSubmitForm(form);
         });
       } else {
         console.warn('Le slider de hauteur est introuvable.');
@@ -652,14 +779,14 @@ function () {
 
 
       form.addEventListener('change', function () {
-        _this6.autoSubmitForm(form);
+        _this5.autoSubmitForm(form);
       }); // soumission du form message dans cell détail
 
       var btnSaveMessageCell = document.getElementById('message-form');
       btnSaveMessageCell.addEventListener('submit', function (event) {
         event.preventDefault();
 
-        _this6.messageCellSubmitForm();
+        _this5.messageCellSubmitForm();
       });
     }
   }, {
@@ -771,6 +898,7 @@ function () {
   }, {
     key: "placeItemInCell",
     value: function placeItemInCell(cell, itemId) {
+      console.log("Placing item ".concat(itemId, " in cell at (").concat(cell.posX, ", ").concat(cell.posY, ")"));
       cell.exists = true; // Marque la cellule comme existante.
 
       cell.item = itemId; // Associe l'item sélectionné à la cellule.
@@ -801,6 +929,11 @@ function () {
       }); // Trouve l'item correspondant.
 
       if (item) {
+        // Supprime l'ancienne image s'il y en a déjà une dans ce cellElement
+        while (cellElement.firstChild) {
+          cellElement.removeChild(cellElement.firstChild);
+        }
+
         var itemElement = document.createElement("img"); // Crée un élément image pour l'item.
 
         itemElement.src = item.img; // Définit la source de l'image.
@@ -826,23 +959,56 @@ function () {
   }, {
     key: "renderItemList",
     value: function renderItemList() {
-      var _this7 = this;
+      var _this6 = this;
 
       var itemListContainer = document.getElementById("item-list");
       itemListContainer.innerHTML = ""; // Vide la liste des items pour la réinitialiser.
 
-      this.items.forEach(function (item) {
+      var itemsForLayer = []; // Filtrer les items en fonction du layer actif
+
+      switch (this.layer) {
+        case 'object':
+          itemsForLayer = this.items.filter(function (item) {
+            return item.is_object;
+          }); // Items où is_object est vrai
+
+          break;
+
+        case 'character':
+          itemsForLayer = this.items.filter(function (item) {
+            return item.item_type === 9;
+          }); // Items où item_type est 9 (personnages)
+
+          break;
+
+        case 'element':
+          itemsForLayer = this.items.filter(function (item) {
+            return !item.is_object && item.item_type !== 9;
+          }); // Les autres items
+
+          break;
+
+        default:
+          itemsForLayer = this.items; // Par défaut, on affiche tous les items
+
+          break;
+      }
+
+      console.log('Items pour cette couche:', itemsForLayer); // Crée les éléments HTML pour chaque item filtré
+
+      itemsForLayer.forEach(function (item) {
         var itemElement = document.createElement("div");
         itemElement.className = "item d-flex align-items-start mb-2";
-        itemElement.innerHTML = "\n                <img src=\"".concat(item.img, "\" alt=\"").concat(item.name, "\" title=\"").concat(item.description, "\" class=\"item-thumbnail me-2\" />\n                <div class=\"item-details\">\n                    <h6 class=\"item-name mb-1\">").concat(item.name, "</h6>\n                    <p class=\"item-description text-muted mb-0\">").concat(_this7.truncateText(item.description, 40), "</p>\n                </div>\n            ");
+        itemElement.innerHTML = "\n                <img src=\"".concat(item.img, "\" alt=\"").concat(item.name, "\" title=\"").concat(item.description, "\" class=\"item-thumbnail me-2\" />\n                <div class=\"item-details\">\n                    <h6 class=\"item-name mb-1\">").concat(item.name, "</h6>\n                    <p class=\"item-description text-muted mb-0\">").concat(_this6.truncateText(item.description, 40), "</p>\n                </div>\n            "); // Ajoute un écouteur de clic pour sélectionner l'item
+
         itemElement.addEventListener('click', function () {
-          _this7.selectedItem = item; // Définit l'item sélectionné lors du clic.
+          _this6.selectedItem = item; // Définit l'item sélectionné lors du clic
 
           console.log("Item s\xE9lectionn\xE9: ".concat(item.name));
         });
-        itemElement.querySelector("img").draggable = false; // Empêche le glisser-déposer de l'image.
+        itemElement.querySelector("img").draggable = false; // Empêche le glisser-déposer de l'image
 
-        itemListContainer.appendChild(itemElement); // Ajoute l'item à la liste des items disponibles.
+        itemListContainer.appendChild(itemElement); // Ajoute l'item à la liste des items disponibles
       });
     } // Troncature des textes trop longs dans la liste des items.
 
@@ -869,24 +1035,25 @@ function () {
   }, {
     key: "setupEventListeners",
     value: function setupEventListeners() {
-      var _this8 = this;
+      var _this7 = this;
 
       var playModeButton = document.getElementById("toggle-play-mode-button");
       var insertModeButton = document.getElementById("toggle-insert-mode-button");
       var deleteModeButton = document.getElementById("toggle-delete-mode-button");
       var selectModeButton = document.getElementById("toggle-select-mode-button");
-      var mapContainer = document.getElementById("map-container");
+      var mapContainer = document.getElementById("map-container"); // Écouteurs pour les boutons de mode
+
       playModeButton.addEventListener('click', function _callee() {
         return regeneratorRuntime.async(function _callee$(_context7) {
           while (1) {
             switch (_context7.prev = _context7.next) {
               case 0:
-                _this8.changeMode('play'); // Appeler initializeGame et attendre qu'il termine
+                _this7.changeMode('play'); // Appeler initializeGame et attendre qu'il termine
 
 
                 _context7.prev = 1;
                 _context7.next = 4;
-                return regeneratorRuntime.awrap(_this8.gameEngine.initializeGame());
+                return regeneratorRuntime.awrap(_this7.gameEngine.initializeGame());
 
               case 4:
                 _context7.next = 9;
@@ -905,65 +1072,115 @@ function () {
         }, null, null, [[1, 6]]);
       });
       insertModeButton.addEventListener('click', function () {
-        _this8.changeMode('insert');
+        _this7.changeMode('insert');
       });
       deleteModeButton.addEventListener('click', function () {
-        _this8.changeMode('delete');
+        _this7.changeMode('delete');
       });
       selectModeButton.addEventListener('click', function () {
-        _this8.changeMode('select');
-      }); // Ajout des événements pour la touche Shift
+        _this7.changeMode('select');
+      }); // Ajout des événements pour la touche Shift (mode grab)
 
       document.addEventListener('keydown', function (event) {
         if (event.key === 'Shift') {
-          if (_this8.mode !== 'grab') {
-            _this8.previousMode = _this8.mode; // Sauvegarde du mode actuel
+          if (_this7.mode !== 'grab') {
+            _this7.previousMode = _this7.mode; // Sauvegarde du mode actuel
 
-            _this8.changeMode('grab'); // Passe en mode "grab"
+            _this7.changeMode('grab'); // Passe en mode "grab"
 
           }
         }
       });
       document.addEventListener('keyup', function (event) {
-        if (event.key === 'Shift' && _this8.mode === 'grab') {
-          _this8.changeMode(_this8.previousMode); // Restaure le mode précédent
+        if (event.key === 'Shift' && _this7.mode === 'grab') {
+          _this7.changeMode(_this7.previousMode); // Restaure le mode précédent
 
 
-          _this8.previousMode = null; // Réinitialise le mode précédent
+          _this7.previousMode = null; // Réinitialise le mode précédent
         }
-      }); // Gestion du déplacement de la grille lorsque le mode "grab" est activé
+      }); // Gestion du déplacement de la grille en mode "grab"
 
       var isGrabbing = false;
       var startX, startY, scrollLeft, scrollTop;
       mapContainer.addEventListener('mousedown', function (e) {
-        if (_this8.mode === 'grab') {
+        if (_this7.mode === 'grab') {
           isGrabbing = true;
           mapContainer.classList.add('grabbing');
           startX = e.pageX - mapContainer.offsetLeft;
           startY = e.pageY - mapContainer.offsetTop;
           scrollLeft = mapContainer.scrollLeft;
           scrollTop = mapContainer.scrollTop;
+        } else {
+          _this7.isMouseDown = true; // Interaction standard (non-grab)
         }
       });
       mapContainer.addEventListener('mouseleave', function () {
         isGrabbing = false;
         mapContainer.classList.remove('grabbing');
+        _this7.isMouseDown = false; // S'assure que la souris n'est plus enfoncée
       });
       mapContainer.addEventListener('mouseup', function () {
         isGrabbing = false;
         mapContainer.classList.remove('grabbing');
+
+        _this7.onMouseUp(); // Gestion de la fin du clic pour l'interaction standard
+
       });
       mapContainer.addEventListener('mousemove', function (e) {
-        if (!isGrabbing) return;
-        e.preventDefault();
-        var x = e.pageX - mapContainer.offsetLeft;
-        var y = e.pageY - mapContainer.offsetTop;
-        var walkX = (x - startX) * 1.5; // Multiplicateur pour la vitesse de défilement horizontal
+        if (isGrabbing) {
+          e.preventDefault();
+          var x = e.pageX - mapContainer.offsetLeft;
+          var y = e.pageY - mapContainer.offsetTop;
+          var walkX = (x - startX) * 1.5; // Multiplicateur pour ajuster la vitesse du déplacement horizontal
 
-        var walkY = (y - startY) * 1.5; // Multiplicateur pour la vitesse de défilement vertical
+          var walkY = (y - startY) * 1.5; // Multiplicateur pour ajuster la vitesse du déplacement vertical
 
-        mapContainer.scrollLeft = scrollLeft - walkX;
-        mapContainer.scrollTop = scrollTop - walkY;
+          mapContainer.scrollLeft = scrollLeft - walkX;
+          mapContainer.scrollTop = scrollTop - walkY;
+        } else if (_this7.isMouseDown) {
+          // Interaction standard pendant un clic maintenu
+          var hoveredCell = document.elementFromPoint(e.clientX, e.clientY);
+
+          if (hoveredCell && hoveredCell.classList.contains('cell')) {
+            var cell = _this7.getCellFromElement(hoveredCell);
+
+            _this7.onMouseOver(cell, hoveredCell); // Appelle la fonction pour gérer le survol
+
+          }
+        }
+      }); // Écouteurs pour les boutons de layers (éléments, objets, personnages)
+
+      var toggleLayerElementModeButton = document.getElementById("toggle-layerElement-mode-button");
+      var toggleLayerObjectModeButton = document.getElementById("toggle-layerObject-mode-button");
+      var toggleLayerCharacterModeButton = document.getElementById("toggle-layerCharacter-mode-button");
+      toggleLayerElementModeButton.addEventListener('click', function () {
+        _this7.changeLayer('element');
+
+        _this7.updateModeUI();
+      });
+      toggleLayerObjectModeButton.addEventListener('click', function () {
+        _this7.changeLayer('object');
+
+        _this7.updateModeUI();
+      });
+      toggleLayerCharacterModeButton.addEventListener('click', function () {
+        _this7.changeLayer('character');
+
+        _this7.updateModeUI();
+      }); // Ajout d'un écouteur global pour capturer les événements de relâchement de souris
+
+      document.addEventListener('mouseup', function () {
+        return _this7.onMouseUp();
+      });
+    }
+  }, {
+    key: "getCellFromElement",
+    value: function getCellFromElement(cellElement) {
+      var posX = parseInt(cellElement.style.left) / this.roomData.cell_size;
+      var posY = parseInt(cellElement.style.top) / this.roomData.cell_size;
+      var currentLayerCells = this.getLayerCells();
+      return currentLayerCells.find(function (cell) {
+        return cell.posX === posX && cell.posY === posY;
       });
     } // Fonction pour changer le mode et mettre à jour l'interface
 
@@ -973,6 +1190,24 @@ function () {
       this.mode = newMode;
       this.updateModeButtons();
       this.updateModeUI();
+      this.updateLayerInteractivity();
+    }
+  }, {
+    key: "getLayerCells",
+    value: function getLayerCells() {
+      switch (this.layer) {
+        case 'element':
+          return this.layerElements;
+
+        case 'object':
+          return this.layerObjects;
+
+        case 'character':
+          return this.layerCharacters;
+
+        default:
+          return [];
+      }
     } // Met à jour l'apparence des boutons de mode en fonction du mode actif
 
   }, {
@@ -997,41 +1232,108 @@ function () {
 
       switch (this.mode) {
         case 'play':
-          banner.textContent = "Mode Play Activé";
+          banner.textContent = "Jouer - ".concat(this.layer);
           banner.className = "banner banner-insert";
           body.classList.add('mode-play');
           break;
 
         case 'insert':
-          banner.textContent = "Mode Insertion Activé";
+          banner.textContent = "Insertion - ".concat(this.layer);
           banner.className = "banner banner-insert";
           body.classList.add('mode-insert');
           break;
 
         case 'delete':
-          banner.textContent = "Mode Suppression Activé";
+          banner.textContent = "Suppression - ".concat(this.layer);
           banner.className = "banner banner-delete";
           body.classList.add('mode-delete');
           break;
 
         case 'select':
-          banner.textContent = "Mode Sélection Activé";
+          banner.textContent = "Selection - ".concat(this.layer);
           banner.className = "banner banner-select";
           body.classList.add('mode-select');
           break;
 
         case 'grab':
-          banner.textContent = "Mode Saisie Activé";
+          banner.textContent = "Grab - ".concat(this.layer);
           banner.className = "banner banner-grab";
           body.classList.add('mode-grab');
           break;
 
         default:
-          banner.textContent = "Mode Sélection Activé";
+          banner.textContent = "Selection - ".concat(this.layer);
           banner.className = "banner banner-select";
           body.classList.add('mode-select');
           break;
       }
+    }
+  }, {
+    key: "changeLayer",
+    value: function changeLayer(newLayer) {
+      // Si on clique à nouveau sur le même layer, on désactive ce layer pour afficher tous les items
+      if (this.layer === newLayer) {
+        this.layer = null; // Désactivation du layer actif
+      } else {
+        this.layer = newLayer; // Activation du nouveau layer
+      }
+
+      this.updateLayerButtons(); // Met à jour l'état des boutons de layer dans l'UI
+
+      this.updateLayerInteractivity(); // Met à jour la visibilité et l'interactivité des layers
+
+      this.renderItemList(); // Réaffiche la liste des items filtrés selon le layer
+    } // Fonction pour mettre à jour l'interactivité des layers
+
+  }, {
+    key: "updateLayerInteractivity",
+    value: function updateLayerInteractivity() {
+      var elementsLayer = document.getElementById('map-container-elements');
+      var objectsLayer = document.getElementById('map-container-objects');
+      var charactersLayer = document.getElementById('map-container-characters'); // Désactive les pointer-events pour les couches qui ne sont pas actives
+
+      elementsLayer.classList.remove('layer-active', 'layer-inactive');
+      objectsLayer.classList.remove('layer-active', 'layer-inactive');
+      charactersLayer.classList.remove('layer-active', 'layer-inactive'); // Applique les bonnes classes selon le layer actif
+
+      switch (this.layer) {
+        case 'element':
+          elementsLayer.classList.add('layer-active');
+          objectsLayer.classList.add('layer-inactive');
+          charactersLayer.classList.add('layer-inactive');
+          break;
+
+        case 'object':
+          elementsLayer.classList.add('layer-inactive');
+          objectsLayer.classList.add('layer-active');
+          charactersLayer.classList.add('layer-inactive');
+          break;
+
+        case 'character':
+          elementsLayer.classList.add('layer-inactive');
+          objectsLayer.classList.add('layer-inactive');
+          charactersLayer.classList.add('layer-active');
+          break;
+
+        case null:
+          elementsLayer.classList.remove('layer-inactive');
+          objectsLayer.classList.remove('layer-inactive');
+          charactersLayer.classList.remove('layer-inactive');
+          break;
+
+        default:
+          break;
+      }
+    }
+  }, {
+    key: "updateLayerButtons",
+    value: function updateLayerButtons() {
+      var toggleLayerElementModeButton = document.getElementById("toggle-layerElement-mode-button");
+      var toggleLayerObjectModeButton = document.getElementById("toggle-layerObject-mode-button");
+      var toggleLayerCharacterModeButton = document.getElementById("toggle-layerCharacter-mode-button");
+      toggleLayerElementModeButton.classList.toggle('active-mode', this.layer === 'element');
+      toggleLayerObjectModeButton.classList.toggle('active-mode', this.layer === 'object');
+      toggleLayerCharacterModeButton.classList.toggle('active-mode', this.layer === 'character');
     }
   }]);
 

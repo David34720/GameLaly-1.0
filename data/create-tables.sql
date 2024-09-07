@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS "cell" (
     "room_id" INTEGER NOT NULL REFERENCES "room"("id") ON DELETE CASCADE,
     "room_id_link" INTEGER REFERENCES "room"("id") ON DELETE SET NULL,
     "item_id" INTEGER REFERENCES "item"("id") ON DELETE SET NULL,
+    "layer_type" TEXT,
     "message_id" INTEGER REFERENCES "message"("id") ON DELETE SET NULL,
     "pos_x" INTEGER,
     "pos_y" INTEGER,

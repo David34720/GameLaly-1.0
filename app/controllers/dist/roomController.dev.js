@@ -38,7 +38,7 @@ var roomController = {
     });
   },
   add: function add(req, res) {
-    var map_id, isFirst, qtyRoomWithMapId, room, notification;
+    var map_id, isFirst, qtyRoomWithMapId, room, user, playerData, itemsData, notification;
     return regeneratorRuntime.async(function add$(_context2) {
       while (1) {
         switch (_context2.prev = _context2.next) {
@@ -76,14 +76,32 @@ var roomController = {
 
           case 8:
             room = _context2.sent;
+            _context2.next = 11;
+            return regeneratorRuntime.awrap(User.findByPk(req.session.user.id));
+
+          case 11:
+            user = _context2.sent;
+            playerData = {
+              pos_x: room.start_x,
+              pos_y: room.start_y,
+              img: user ? user.img : 'default-image.png'
+            };
+            _context2.next = 15;
+            return regeneratorRuntime.awrap(Item.findAll());
+
+          case 15:
+            itemsData = _context2.sent;
             notification = req.session.notification || null;
             req.session.notification = null;
             res.render("rooms", {
               room: room,
-              notification: notification
+              notification: notification,
+              playerData: playerData,
+              cells: [],
+              itemsData: itemsData
             });
 
-          case 12:
+          case 19:
           case "end":
             return _context2.stop();
         }
@@ -364,9 +382,10 @@ var roomController = {
         switch (_context9.prev = _context9.next) {
           case 0:
             cellsData = req.body;
+            console.log('saveCellControler', cellsData);
 
             if (Array.isArray(cellsData)) {
-              _context9.next = 3;
+              _context9.next = 4;
               break;
             }
 
@@ -374,34 +393,36 @@ var roomController = {
               error: 'Les données envoyées doivent être un tableau.'
             }));
 
-          case 3:
-            _context9.prev = 3;
+          case 4:
+            _context9.prev = 4;
             _iteratorNormalCompletion = true;
             _didIteratorError = false;
             _iteratorError = undefined;
-            _context9.prev = 7;
+            _context9.prev = 8;
             _iterator = cellsData[Symbol.iterator]();
 
-          case 9:
+          case 10:
             if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-              _context9.next = 18;
+              _context9.next = 19;
               break;
             }
 
             cellData = _step.value;
-            _context9.next = 13;
+            _context9.next = 14;
             return regeneratorRuntime.awrap(Cell.destroy({
               where: {
                 room_id: cellData.room_id,
+                layer_type: cellData.layer_type,
                 pos_x: cellData.pos_x,
                 pos_y: cellData.pos_y
               }
             }));
 
-          case 13:
-            _context9.next = 15;
+          case 14:
+            _context9.next = 16;
             return regeneratorRuntime.awrap(Cell.create({
               room_id: cellData.room_id,
+              layer_type: cellData.layer_type,
               pos_x: cellData.pos_x,
               pos_y: cellData.pos_y,
               item_id: cellData.item_id,
@@ -413,70 +434,70 @@ var roomController = {
               offset_y: cellData.offset_y || 0
             }));
 
-          case 15:
+          case 16:
             _iteratorNormalCompletion = true;
-            _context9.next = 9;
+            _context9.next = 10;
             break;
 
-          case 18:
-            _context9.next = 24;
+          case 19:
+            _context9.next = 25;
             break;
 
-          case 20:
-            _context9.prev = 20;
-            _context9.t0 = _context9["catch"](7);
+          case 21:
+            _context9.prev = 21;
+            _context9.t0 = _context9["catch"](8);
             _didIteratorError = true;
             _iteratorError = _context9.t0;
 
-          case 24:
-            _context9.prev = 24;
+          case 25:
             _context9.prev = 25;
+            _context9.prev = 26;
 
             if (!_iteratorNormalCompletion && _iterator["return"] != null) {
               _iterator["return"]();
             }
 
-          case 27:
-            _context9.prev = 27;
+          case 28:
+            _context9.prev = 28;
 
             if (!_didIteratorError) {
-              _context9.next = 30;
+              _context9.next = 31;
               break;
             }
 
             throw _iteratorError;
 
-          case 30:
-            return _context9.finish(27);
-
           case 31:
-            return _context9.finish(24);
+            return _context9.finish(28);
 
           case 32:
+            return _context9.finish(25);
+
+          case 33:
             res.status(200).json({
               message: 'Cellules sauvegardées avec succès'
             });
-            _context9.next = 39;
+            _context9.next = 40;
             break;
 
-          case 35:
-            _context9.prev = 35;
-            _context9.t1 = _context9["catch"](3);
+          case 36:
+            _context9.prev = 36;
+            _context9.t1 = _context9["catch"](4);
             console.error('Erreur lors de la sauvegarde des cellules:', _context9.t1);
             res.status(500).json({
               error: 'Erreur lors de la sauvegarde des cellules.'
             });
 
-          case 39:
+          case 40:
           case "end":
             return _context9.stop();
         }
       }
-    }, null, null, [[3, 35], [7, 20, 24, 32], [25,, 27, 31]]);
+    }, null, null, [[4, 36], [8, 21, 25, 33], [26,, 28, 32]]);
   },
   // Méthode pour mettre à jour une cellule, incluant la gestion de la largeur et de la hauteur
   updateCell: function updateCell(req, res) {
-    var _req$body2, cell_id, room_id, pos_x, pos_y, item_id, message_id, message, width, height, cell, newMessageId, existingMessage, newMessage;
+    var _req$body2, cell_id, room_id, layer_type, pos_x, pos_y, item_id, message_id, message, width, height, cell, newMessageId, existingMessage, newMessage;
 
     return regeneratorRuntime.async(function updateCell$(_context10) {
       while (1) {
@@ -484,7 +505,7 @@ var roomController = {
           case 0:
             _context10.prev = 0;
             console.log('Update cell data received:', req.body);
-            _req$body2 = req.body, cell_id = _req$body2.cell_id, room_id = _req$body2.room_id, pos_x = _req$body2.pos_x, pos_y = _req$body2.pos_y, item_id = _req$body2.item_id, message_id = _req$body2.message_id, message = _req$body2.message, width = _req$body2.width, height = _req$body2.height;
+            _req$body2 = req.body, cell_id = _req$body2.cell_id, room_id = _req$body2.room_id, layer_type = _req$body2.layer_type, pos_x = _req$body2.pos_x, pos_y = _req$body2.pos_y, item_id = _req$body2.item_id, message_id = _req$body2.message_id, message = _req$body2.message, width = _req$body2.width, height = _req$body2.height;
             _context10.next = 5;
             return regeneratorRuntime.awrap(Cell.findOne({
               where: {
@@ -554,7 +575,10 @@ var roomController = {
               item_id: item_id || null,
               message_id: newMessageId || null,
               width: width || 1,
-              height: height || 1
+              height: height || 1,
+              layer_type: layer_type || 'element',
+              pos_x: pos_x || 0,
+              pos_y: pos_y || 0
             }));
 
           case 25:

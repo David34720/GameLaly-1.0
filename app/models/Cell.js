@@ -44,6 +44,10 @@ Cell.init(
                 key: 'id',
             },
         },
+        layer_type: {
+            type: DataTypes.TEXT,
+            defaultValue: 'element',
+        },
         message_id: {
             type: DataTypes.INTEGER,
             references: {

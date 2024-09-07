@@ -40,18 +40,18 @@
                     </form>
                 <% } %>
                 <a class="p-2 text-white" href="/">Accueil</a>
-                <% if (locals.user) { %>
-                    <% if (locals.user && locals.user.role && locals.user.role.name === 'admin') { %>
-                        <a class="p-2 text-white" href="/admin">Admin</a>
-                        <a class="p-2 text-white" href="/map/add">Maps</a>
-                        <a class="p-2 text-white" href="/levels">Levels</a>
-                        <a class="p-2 text-white" href="/items">Items</a>
-                    <% } %>
+                <a class="p-2 text-white" href="/admin">Admin</a>
+                <a class="p-2 text-white" href="/map/add">Maps</a>
+                <a class="p-2 text-white" href="/levels">Levels</a>
+                <a class="p-2 text-white" href="/items">Items</a>
+                <!-- <% if (locals.user) { %> -->
+                    <!-- <% if (locals.user && locals.user.role && locals.user.role.name === 'admin') { %> -->
+                    <!-- <% } %> -->
                     <a class="p-2" style="color: rgba(179, 97, 80, 0.7)"   href="/logout">Se déconnecter</a>
-                <% } else { %>
+                <!-- <% } else { %> -->
                     <a class="p-2 text-white" href="/register">S'inscrire</a>
                     <a class="p-2 text-white" href="/login">Se connecter</a>
-                <% } %>
+                <!-- <% } %> -->
             </nav>
           
         </header>

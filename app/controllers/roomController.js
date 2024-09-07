@@ -29,11 +29,19 @@ const roomController = {
             img_bg: "",
             color_bg: "#FFFFFF"
         });
+        const user = await User.findByPk(req.session.user.id);
+        const playerData = {
+            pos_x: room.start_x,
+            pos_y: room.start_y,
+            img: user ? user.img : 'default-image.png'
+        };
+        const itemsData = await Item.findAll();
 
         const notification = req.session.notification || null;
         req.session.notification = null;
-        res.render(`rooms`, { room, notification });
+        res.render(`rooms`, { room, notification, playerData, cells: [], itemsData });
     },
+    
 
     async create(req, res) {
         req.session.notification = {
@@ -172,7 +180,7 @@ const roomController = {
 
     async saveCells(req, res) {
         const cellsData = req.body;
-
+        console.log('saveCellControler', cellsData);
         if (!Array.isArray(cellsData)) {
             return res.status(400).json({ error: 'Les données envoyées doivent être un tableau.' });
         }
@@ -183,14 +191,16 @@ const roomController = {
                 await Cell.destroy({
                     where: {
                         room_id: cellData.room_id,
+                        layer_type: cellData.layer_type,
                         pos_x: cellData.pos_x,
-                        pos_y: cellData.pos_y
+                        pos_y: cellData.pos_y,
                     }
                 });
 
                 // Insertion des nouvelles cellules avec gestion des objets plus grands (width, height)
                 await Cell.create({
                     room_id: cellData.room_id,
+                    layer_type: cellData.layer_type,
                     pos_x: cellData.pos_x,
                     pos_y: cellData.pos_y,
                     item_id: cellData.item_id,
@@ -213,7 +223,7 @@ const roomController = {
         try {
             console.log('Update cell data received:', req.body);
     
-            const { cell_id, room_id, pos_x, pos_y, item_id, message_id, message, width, height } = req.body;
+            const { cell_id, room_id, layer_type, pos_x, pos_y, item_id, message_id, message, width, height } = req.body;
     
             const cell = await Cell.findOne({
                 where: { id: cell_id }
@@ -241,6 +251,9 @@ const roomController = {
                 message_id: newMessageId || null,
                 width: width || 1,
                 height: height || 1,
+                layer_type: layer_type || 'element',
+                pos_x: pos_x || 0,
+                pos_y: pos_y || 0
             });
     
             res.status(200).json({ message: 'Cellule mise à jour avec succès' });

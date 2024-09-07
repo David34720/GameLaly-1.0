@@ -16,6 +16,7 @@ export class RoomBuilder {
         this.cells = []; // Tableau pour stocker les cellules de la pièce
         this.selectedItem = null; // Item actuellement sélectionné pour insertion dans une cellule
         this.mode = 'select'; // Mode courant : 'select', 'insert', ou 'delete'
+        this.layer = 'element'; // Layer courant : 'objet', 'character', ou 'element'
         this.selectedCells = new Set(); // Ensemble des cellules sélectionnées
         this.isMouseDown = false; // Indicateur pour savoir si la souris est enfoncée
         this.isSaving = false; // Indicateur pour empêcher les sauvegardes répétées
@@ -121,90 +122,162 @@ export class RoomBuilder {
     // Crée les cellules de la carte en fonction des données de la pièce (roomData) fournies lors de l'instanciation.
     // Les cellules sont initialisées avec leur position, leur taille, et les éventuels items ou messages.
     createCells() {
-        const { nb_rows, nb_cols, cell_size } = this.roomData; // Récupère les dimensions et la taille des cellules depuis roomData.
+        const { nb_rows, nb_cols, cell_size } = this.roomData;
+    
+        // Créer 3 layers pour les différents types d'items
+        this.layerCharacters = []; // Items où item_type === 9 (personnages)
+        this.layerObjects = []; // Items où is_object === true (objets)
+        this.layerElements = []; // Les autres items ou cellules vides
+
+
+
+        // Crée les cellules
         for (let y = 0; y < nb_rows; y++) {
             for (let x = 0; x < nb_cols; x++) {
-                const cell = {
-                    x: x * cell_size, // Position en pixels sur l'axe X
-                    y: y * cell_size, // Position en pixels sur l'axe Y
-                    posX: x, // Position en colonnes
-                    posY: y, // Position en lignes
-                    exists: false, // Indique si la cellule contient un item ou un message
-                    item: null, // ID de l'item dans la cellule (null si aucun)
-                    message: null // ID du message dans la cellule (null si aucun)
+                const baseCell = {
+                    x: x * cell_size,
+                    y: y * cell_size,
+                    posX: x,
+                    posY: y,
+                    exists: false,
+                    item: null,
+                    message: null,
+                    layer_type: 'default',
                 };
-                const existingCell = this.roomData.cells.find(c => c.pos_x === x && c.pos_y === y); // Vérifie si une cellule existe déjà à cette position.
-                if (existingCell) {
-                    console.log("Cellule existante:", existingCell);
-                    cell.exists = true; // Marque la cellule comme existante.
-                    cell.item = existingCell.item_id; // Associe l'item existant à la cellule.
-                    cell.message = existingCell.message_id; // Associe le message existant à la cellule.
-                    cell.id = existingCell.id;
-                    console.log("Cellule existante IDDDDDD:", cell);
+        
+                const cellsFinded = this.roomData.cells.filter(c => c.pos_x === x && c.pos_y === y);
+        
+                if (cellsFinded.length > 0) {
+                    cellsFinded.forEach(c => {
+                        const cell = { ...baseCell }; // Clone the baseCell for each layer
+                        cell.exists = true;
+                        cell.item = c.item_id;
+                        cell.message = c.message_id;
+                        cell.id = c.id;
+        
+                        const item = this.items.find(i => i.id === cell.item);
+                        if (item) {
+                            if (item.item_type === 9) {
+                                cell.layer_type = 'personnage';
+                                this.layerCharacters.push(cell);
+                            } else if (item.is_object) {
+                                cell.layer_type = 'object';
+                                this.layerObjects.push(cell);
+                            } else {
+                                cell.layer_type = 'element';
+                                this.layerElements.push(cell);
+                            }
+                        }
+        
+                        this.cells.push(cell);
+                    });
+                } else {
+                    const emptyCell = { ...baseCell };
+                    emptyCell.layer_type = 'element'; // Default to elements for empty cells
+                    this.layerElements.push(emptyCell);
+                    this.layerObjects.push({ ...baseCell, layer_type: 'object' });
+                    this.layerCharacters.push({ ...baseCell, layer_type: 'personnage' });
+        
+                    this.cells.push(emptyCell);
                 }
-                this.cells.push(cell); // Ajoute la cellule au tableau des cellules.
             }
         }
+        
     }
-
+    
+    
+    
     // Affiche la carte en créant les éléments HTML pour chaque cellule et en les positionnant dans le conteneur principal.
     // Les cellules existantes sont affichées avec une couleur spécifique et peuvent contenir un item.
     renderMap() {
         const mapContainer = document.getElementById("map-container");
         mapContainer.innerHTML = ""; // Vide le conteneur pour le réinitialiser.
+
+        const mapContainerCharacters = document.createElement("div");
+        mapContainerCharacters.id = "map-container-characters";
+        mapContainerCharacters.className = "map-layer";
+        mapContainer.appendChild(mapContainerCharacters);
+
+        const mapContainerObjects = document.createElement("div");
+        mapContainerObjects.id = "map-container-objects";
+        mapContainerObjects.className = "map-layer";
+        mapContainer.appendChild(mapContainerObjects);
+
+        const mapContainerElements = document.createElement("div");
+        mapContainerElements.id = "map-container-elements";
+        mapContainerElements.className = "map-layer";
+        mapContainer.appendChild(mapContainerElements);
+
+        // Display la carte des personnages
+        this.renderLayerMap(this.layerCharacters, mapContainerCharacters, "#FFDD57"); // Personnages
+        
+        // Display la carte des objets
+        this.renderLayerMap(this.layerObjects, mapContainerObjects, "#8FBC8F"); // Objets
+
+        // Display la carte des éléments
+        this.renderLayerMap(this.layerElements, mapContainerElements, "#ADD8E6"); // Autres
+
+
+      
+    }
     
-        mapContainer.style.display = "grid";
-        mapContainer.style.gridTemplateColumns = `repeat(${this.roomData.nb_cols}, ${this.roomData.cell_size}px)`; // Définit le nombre de colonnes et la taille des cellules.
-        mapContainer.style.gridTemplateRows = `repeat(${this.roomData.nb_rows}, ${this.roomData.cell_size}px)`; // Définit le nombre de lignes et la taille des cellules.
+    // Fonction utilisée pour afficher un layer particulier
+    // Fonction pour afficher un layer particulier (éléments, objets, personnages)
+    renderLayerMap(layer, container, color) {
+        const { cell_size } = this.roomData;
     
-        this.cells.forEach(cell => {
-            const cellElement = document.createElement("div"); // Crée un élément HTML pour chaque cellule.
-            cellElement.className = "cell"; // Ajoute la classe CSS pour le style de la cellule.
-            cellElement.style.width = `${this.roomData.cell_size}px`; // Définit la largeur de la cellule.
-            cellElement.style.height = `${this.roomData.cell_size}px`; // Définit la hauteur de la cellule.
-            cellElement.style.boxSizing = "border-box"; // Assure que le padding et la bordure sont inclus dans la taille totale.
-            cellElement.style.border = "1px solid #ccc"; // Ajoute une bordure aux cellules.
-    
-            if (cell.exists) {
-                cellElement.style.backgroundColor = "#007bff"; // Change la couleur de fond pour les cellules existantes.
-                if (cell.item) {
-                    this.renderItemInCell(cellElement, cell.item); // Affiche l'item dans la cellule si elle en contient un.
-                    cellElement.style.border = "0px solid #ccc";
-                }
-            } else {
-                cellElement.style.backgroundColor = "#fff"; // Couleur de fond pour les cellules vides.
+        // On efface d'abord tout ce qui existe dans le container
+        container.innerHTML = '';
+
+        layer.forEach(cell => {
+            const cellElement = document.createElement("div");
+            cellElement.className = "cell";
+            cellElement.style.width = `${cell_size}px`;
+            cellElement.style.height = `${cell_size}px`;
+            cellElement.style.border = "1px solid #ccc";
+            cellElement.style.backgroundColor = color;
+
+            // Utilisation de position absolute pour positionner les cellules
+            cellElement.style.position = "absolute";
+            cellElement.style.left = `${cell.posX * cell_size}px`;
+            cellElement.style.top = `${cell.posY * cell_size}px`;
+            console.log('layer', cell.layer_type, cell);
+            // Afficher l'item si la cellule contient un item
+            if (cell.exists && cell.item) {
+                this.renderItemInCell(cellElement, cell.item);
             }
-    
-            mapContainer.appendChild(cellElement); // Ajoute l'élément cellule au conteneur.
-    
-            // Ajoute des événements pour gérer les interactions utilisateur (clics et survol).
+
+            container.appendChild(cellElement);
+
+            // Ajout des événements d'interaction pour chaque cellule
             cellElement.addEventListener('mousedown', () => this.onMouseDown(cell, cellElement));
             cellElement.addEventListener('mouseover', () => this.onMouseOver(cell, cellElement));
         });
-    
-        document.addEventListener('mouseup', () => this.onMouseUp()); // Ajoute un événement global pour gérer la fin du clic.
     }
-    
+
 
     // Gère le clic initial sur une cellule, en fonction du mode courant (sélection, insertion, suppression).
+  
     onMouseDown(cell, cellElement) {
         this.isMouseDown = true; // Marque le début d'une interaction par clic.
-        this.handleCellInteraction(cell, cellElement); // Gère l'interaction avec la cellule en fonction du mode.
+        this.handleCellInteraction(cell, cellElement); // Gère l'interaction avec la cellule.
         cellElement.classList.add('hovered'); // Ajoute une classe CSS pour indiquer que la cellule est survolée.
     }
 
-    // Gère le survol d'une cellule lors du clic maintenu, en fonction du mode courant.
+    // Gère le survol des cellules pendant que la souris est enfoncée
     onMouseOver(cell, cellElement) {
         if (!this.isMouseDown) return; // Ne rien faire si la souris n'est pas enfoncée.
         this.handleCellInteraction(cell, cellElement); // Gère l'interaction avec la cellule en fonction du mode.
-        cellElement.classList.add('hovered'); // Ajoute une classe CSS pour indiquer que la cellule est survolée.
+        cellElement.classList.add('hovered');
     }
 
-    // Gère la fin du clic en réinitialisant les états et en déclenchant la sauvegarde des cellules sélectionnées.
+    // Gère la fin du clic
     onMouseUp() {
-        this.isMouseDown = false; // Marque la fin de l'interaction par clic.
-        this.clearHoveredCells(); // Supprime les styles des cellules survolées.
-        this.saveSelectedCells(); // Sauvegarde les cellules sélectionnées dans la base de données.
+        if (this.isMouseDown) {
+            this.isMouseDown = false; // Marque la fin de l'interaction par clic.
+            this.clearHoveredCells(); // Réinitialise les styles de survol.
+            this.saveSelectedCells(); // Sauvegarde les cellules sélectionnées.
+        }
     }
 
     // Supprime les styles des cellules survolées pour réinitialiser leur apparence.
@@ -216,23 +289,48 @@ export class RoomBuilder {
     // Gère l'interaction avec une cellule en fonction du mode sélectionné (sélection, insertion, suppression).
     handleCellInteraction(cell, cellElement) {
         const cellKey = `${cell.posX}-${cell.posY}`; // Clé unique pour identifier chaque cellule.
-
+    
+        // Choisissez le bon layer en fonction du layer actif
+        let layerCells;
+        switch (this.layer) {
+        case 'element':
+            layerCells = this.layerElements;
+            break;
+        case 'object':
+            layerCells = this.layerObjects;
+            break;
+        case 'character':
+            layerCells = this.layerCharacters;
+            break;
+        default:
+            layerCells = this.cells;
+            break;
+        }
+    
+        // Vérifiez si la cellule fait partie du layer courant
+        const layerCell = layerCells.find(lCell => lCell.posX === cell.posX && lCell.posY === cell.posY);
+        if (!layerCell) return; // Si la cellule n'appartient pas au layer actuel, on ne fait rien
+    
+        // Sélection de cellule
         if (this.mode === 'select') {
-            this.selectCell(cell); // Sélectionne la cellule pour afficher ses détails.
-            console.log('handleInrecation', cell)
+            this.selectCell(layerCell); // Sélectionne la cellule pour afficher ses détails
             return;
         }
-
+    
+        // Insertion d'un item
         if (this.mode === 'insert' && this.selectedItem) {
-            this.placeItemInCell(cell, this.selectedItem.id); // Insère un item dans la cellule.
-            this.selectedCells.add(cellKey); // Ajoute la cellule sélectionnée à l'ensemble des cellules à sauvegarder.
-            cellElement.style.backgroundColor = "#007bff"; // Changement de couleur immédiat pour indiquer l'insertion.
-        } else if (this.mode === 'delete' && cell.exists) {
-            this.deleteCell(cell); // Supprime l'item ou le message de la cellule.
-            this.selectedCells.add(cellKey); // Ajoute la cellule sélectionnée à l'ensemble des cellules à sauvegarder.
-            cellElement.style.backgroundColor = "#fff"; // Changement de couleur immédiat pour indiquer la suppression.
+            this.placeItemInCell(layerCell, this.selectedItem.id); // Insère un item dans la cellule
+            this.selectedCells.add(cellKey); // Ajoute la cellule sélectionnée à l'ensemble des cellules à sauvegarder
+            cellElement.style.backgroundColor = "#007bff"; // Indication visuelle
+        }
+        // Suppression d'un item
+        else if (this.mode === 'delete' && layerCell.exists) {
+            this.deleteCell(layerCell); // Supprime l'item ou le message de la cellule
+            this.selectedCells.add(cellKey); // Ajoute la cellule sélectionnée à l'ensemble des cellules à sauvegarder
+            cellElement.style.backgroundColor = "#fff"; // Indication visuelle
         }
     }
+    
 
     // Met à jour l'apparence d'une cellule spécifique après modification (insertion ou suppression d'item).
     // Met à jour l'apparence d'une cellule spécifique après modification (insertion ou suppression d'item).
@@ -259,19 +357,47 @@ export class RoomBuilder {
             console.warn('Aucune cellule sélectionnée pour la sauvegarde ou suppression ou sauvegarde déjà en cours.');
             return;
         }
-    
+        console.log('selectedCells:', this.selectedCells);
         this.isSaving = true; // Empêche les sauvegardes répétées.
+
+        // Selection du layer actif
+        let layerCells;
+        let layer_type;
+
+        switch (this.layer) {
+        case 'element':
+            layerCells = this.layerElements;
+            layer_type = 'element';
+            break;
+        case 'object':
+            layerCells = this.layerObjects;
+            layer_type = 'object';
+            break;
+        case 'character':
+            layerCells = this.layerCharacters;
+            layer_type = 'character';
+            break;
+        default:
+            layerCells = this.cells;
+            layer_type = 'default';
+            break;
+        }
     
         const cellsData = Array.from(this.selectedCells).map(key => {
+            console.log('cellData key:', key);
             const [posX, posY] = key.split('-').map(Number); // Récupère les coordonnées de la cellule à partir de la clé.
-            const cell = this.cells.find(c => c.posX === posX && c.posY === posY); // Trouve la cellule correspondante.
-    
+            // switch ()
+
+
+            const cell = layerCells.find(c => c.posX === posX && c.posY === posY); // Trouve la cellule correspondante.
+            console.log('cellData', cell);
             return {
                 room_id: this.roomData.id, // Identifiant de la pièce.
                 pos_x: cell.posX, // Coordonnée X de la cellule.
                 pos_y: cell.posY, // Coordonnée Y de la cellule.
                 item_id: cell.exists ? cell.item : null, // Identifiant de l'item (null si aucun).
-                message_id: cell.exists ? cell.message : null // Identifiant du message (null si aucun).
+                message_id: cell.exists ? cell.message : null, // Identifiant du message (null si aucun).
+                layer_type: layer_type
             };
         });
     
@@ -311,24 +437,42 @@ export class RoomBuilder {
 
     // Met à jour les cellules après la sauvegarde pour refléter les modifications.
     updateCellsAfterSave(cellsData) {
+        const layerCells = this.getLayerCells(); // Récupère les cellules du layer actif
+        const layerType = this.layer; // Récupère le type de layer actif (element, object, character)
+    
         cellsData.forEach(data => {
-            const cell = this.cells.find(c => c.posX === data.pos_x && c.posY === data.pos_y); // Trouve la cellule correspondante.
+            // Trouve la cellule dans le layer actuel, en utilisant posX, posY et le layer_type
+            const cell = layerCells.find(c => c.posX === data.pos_x && c.posY === data.pos_y && c.layer_type === layerType);
+            
             if (cell) {
-                cell.exists = data.item_id !== null; // Met à jour l'existence de l'item dans la cellule.
-                cell.item = data.item_id; // Met à jour l'item dans la cellule.
-                cell.message = data.message_id; // Met à jour le message dans la cellule.
+                // Si l'item_id n'est pas null, on définit exists à true, sinon à false
+                cell.exists = data.item_id !== null;
+    
+                // Met à jour l'item et le message dans la cellule
+                cell.item = data.item_id;
+                cell.message = data.message_id;
             }
         });
     }
+    
 
     // Sélectionne une cellule et affiche ses détails dans l'interface utilisateur.
     selectCell(cell) {
         console.log(`Sélection de la cellule : (${cell.posX}, ${cell.posY}, ${cell.id})`);
         this.showCellDetails(cell); // Affiche les détails de la cellule sélectionnée.
+    
         if (cell.exists && cell.item) {
-            this.highlightSelectedItem(this.items.find(item => item.id === cell.item)); // Met en évidence l'item sélectionné.
+            const selectedItem = this.items.find(item => item.id === cell.item); // Trouve l'objet item correspondant à l'ID
+            if (selectedItem) {
+                this.selectedItem = selectedItem; // Définit l'item sélectionné
+                console.log(`Sélection de l'item : ${selectedItem.name}`);
+                this.highlightSelectedItem(selectedItem); // Met en évidence l'item dans la liste si besoin
+            } else {
+                console.error(`Item avec ID ${cell.item} non trouvé.`);
+            }
         }
     }
+    
 
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
@@ -508,6 +652,7 @@ export class RoomBuilder {
 
     // Place un item dans une cellule spécifique et met à jour son apparence.
     placeItemInCell(cell, itemId) {
+        console.log(`Placing item ${itemId} in cell at (${cell.posX}, ${cell.posY})`);
         cell.exists = true; // Marque la cellule comme existante.
         cell.item = itemId; // Associe l'item sélectionné à la cellule.
         this.updateCellAppearance(cell, false); // Met à jour l'apparence de la cellule.
@@ -528,6 +673,11 @@ export class RoomBuilder {
     renderItemInCell(cellElement, itemId) {
         const item = this.items.find(item => item.id === itemId); // Trouve l'item correspondant.
         if (item) {
+            // Supprime l'ancienne image s'il y en a déjà une dans ce cellElement
+            while (cellElement.firstChild) {
+                cellElement.removeChild(cellElement.firstChild);
+            }
+    
             const itemElement = document.createElement("img"); // Crée un élément image pour l'item.
             itemElement.src = item.img; // Définit la source de l'image.
             itemElement.alt = item.name; // Définit l'alt pour l'accessibilité.
@@ -546,10 +696,35 @@ export class RoomBuilder {
     renderItemList() {
         const itemListContainer = document.getElementById("item-list");
         itemListContainer.innerHTML = ""; // Vide la liste des items pour la réinitialiser.
-        this.items.forEach(item => {
+    
+        let itemsForLayer = [];
+    
+        // Filtrer les items en fonction du layer actif
+        switch (this.layer) {
+        case 'object':
+            itemsForLayer = this.items.filter(item => item.is_object); // Items où is_object est vrai
+            break;
+    
+        case 'character':
+            itemsForLayer = this.items.filter(item => item.item_type === 9); // Items où item_type est 9 (personnages)
+            break;
+    
+        case 'element':
+            itemsForLayer = this.items.filter(item => !item.is_object && item.item_type !== 9); // Les autres items
+            break;
+    
+        default:
+            itemsForLayer = this.items; // Par défaut, on affiche tous les items
+            break;
+        }
+    
+        console.log('Items pour cette couche:', itemsForLayer);
+    
+        // Crée les éléments HTML pour chaque item filtré
+        itemsForLayer.forEach(item => {
             const itemElement = document.createElement("div");
             itemElement.className = "item d-flex align-items-start mb-2";
-
+    
             itemElement.innerHTML = `
                 <img src="${item.img}" alt="${item.name}" title="${item.description}" class="item-thumbnail me-2" />
                 <div class="item-details">
@@ -557,17 +732,19 @@ export class RoomBuilder {
                     <p class="item-description text-muted mb-0">${this.truncateText(item.description, 40)}</p>
                 </div>
             `;
-
+    
+            // Ajoute un écouteur de clic pour sélectionner l'item
             itemElement.addEventListener('click', () => {
-                this.selectedItem = item; // Définit l'item sélectionné lors du clic.
+                this.selectedItem = item; // Définit l'item sélectionné lors du clic
                 console.log(`Item sélectionné: ${item.name}`);
             });
-
-            itemElement.querySelector("img").draggable = false; // Empêche le glisser-déposer de l'image.
-
-            itemListContainer.appendChild(itemElement); // Ajoute l'item à la liste des items disponibles.
+    
+            itemElement.querySelector("img").draggable = false; // Empêche le glisser-déposer de l'image
+    
+            itemListContainer.appendChild(itemElement); // Ajoute l'item à la liste des items disponibles
         });
     }
+    
 
     // Troncature des textes trop longs dans la liste des items.
     truncateText(text, maxLength) {
@@ -596,6 +773,7 @@ export class RoomBuilder {
         const selectModeButton = document.getElementById("toggle-select-mode-button");
         const mapContainer = document.getElementById("map-container");
     
+        // Écouteurs pour les boutons de mode
         playModeButton.addEventListener('click', async () => {
             this.changeMode('play');
             
@@ -606,7 +784,7 @@ export class RoomBuilder {
                 console.error("Erreur lors de l'initialisation du jeu:", error);
             }
         });
-
+    
         insertModeButton.addEventListener('click', () => {
             this.changeMode('insert');
         });
@@ -619,7 +797,7 @@ export class RoomBuilder {
             this.changeMode('select');
         });
     
-        // Ajout des événements pour la touche Shift
+        // Ajout des événements pour la touche Shift (mode grab)
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Shift') {
                 if (this.mode !== 'grab') {
@@ -636,7 +814,7 @@ export class RoomBuilder {
             }
         });
     
-        // Gestion du déplacement de la grille lorsque le mode "grab" est activé
+        // Gestion du déplacement de la grille en mode "grab"
         let isGrabbing = false;
         let startX, startY, scrollLeft, scrollTop;
     
@@ -648,30 +826,74 @@ export class RoomBuilder {
                 startY = e.pageY - mapContainer.offsetTop;
                 scrollLeft = mapContainer.scrollLeft;
                 scrollTop = mapContainer.scrollTop;
+            } else {
+                this.isMouseDown = true; // Interaction standard (non-grab)
             }
         });
     
         mapContainer.addEventListener('mouseleave', () => {
             isGrabbing = false;
             mapContainer.classList.remove('grabbing');
+            this.isMouseDown = false; // S'assure que la souris n'est plus enfoncée
         });
     
         mapContainer.addEventListener('mouseup', () => {
             isGrabbing = false;
             mapContainer.classList.remove('grabbing');
+            this.onMouseUp(); // Gestion de la fin du clic pour l'interaction standard
         });
     
         mapContainer.addEventListener('mousemove', (e) => {
-            if (!isGrabbing) return;
-            e.preventDefault();
-            const x = e.pageX - mapContainer.offsetLeft;
-            const y = e.pageY - mapContainer.offsetTop;
-            const walkX = (x - startX) * 1.5; // Multiplicateur pour la vitesse de défilement horizontal
-            const walkY = (y - startY) * 1.5; // Multiplicateur pour la vitesse de défilement vertical
-            mapContainer.scrollLeft = scrollLeft - walkX;
-            mapContainer.scrollTop = scrollTop - walkY;
+            if (isGrabbing) {
+                e.preventDefault();
+                const x = e.pageX - mapContainer.offsetLeft;
+                const y = e.pageY - mapContainer.offsetTop;
+                const walkX = (x - startX) * 1.5; // Multiplicateur pour ajuster la vitesse du déplacement horizontal
+                const walkY = (y - startY) * 1.5; // Multiplicateur pour ajuster la vitesse du déplacement vertical
+                mapContainer.scrollLeft = scrollLeft - walkX;
+                mapContainer.scrollTop = scrollTop - walkY;
+            } else if (this.isMouseDown) {
+                // Interaction standard pendant un clic maintenu
+                const hoveredCell = document.elementFromPoint(e.clientX, e.clientY);
+                if (hoveredCell && hoveredCell.classList.contains('cell')) {
+                    const cell = this.getCellFromElement(hoveredCell);
+                    this.onMouseOver(cell, hoveredCell); // Appelle la fonction pour gérer le survol
+                }
+            }
         });
+    
+        // Écouteurs pour les boutons de layers (éléments, objets, personnages)
+        const toggleLayerElementModeButton = document.getElementById("toggle-layerElement-mode-button");
+        const toggleLayerObjectModeButton = document.getElementById("toggle-layerObject-mode-button");
+        const toggleLayerCharacterModeButton = document.getElementById("toggle-layerCharacter-mode-button");
+    
+        toggleLayerElementModeButton.addEventListener('click', () => {
+            this.changeLayer('element');
+            this.updateModeUI();
+        });
+    
+        toggleLayerObjectModeButton.addEventListener('click', () => {
+            this.changeLayer('object');
+            this.updateModeUI();
+        });
+    
+        toggleLayerCharacterModeButton.addEventListener('click', () => {
+            this.changeLayer('character');
+            this.updateModeUI();
+        });
+    
+        // Ajout d'un écouteur global pour capturer les événements de relâchement de souris
+        document.addEventListener('mouseup', () => this.onMouseUp());
     }
+
+    getCellFromElement(cellElement) {
+        const posX = parseInt(cellElement.style.left) / this.roomData.cell_size;
+        const posY = parseInt(cellElement.style.top) / this.roomData.cell_size;
+        const currentLayerCells = this.getLayerCells();
+    
+        return currentLayerCells.find(cell => cell.posX === posX && cell.posY === posY);
+    }
+    
     
 
     // Fonction pour changer le mode et mettre à jour l'interface
@@ -679,8 +901,22 @@ export class RoomBuilder {
         this.mode = newMode;
         this.updateModeButtons();
         this.updateModeUI();
+        this.updateLayerInteractivity();
     
        
+    }
+
+    getLayerCells() {
+        switch (this.layer) {
+        case 'element':
+            return this.layerElements;
+        case 'object':
+            return this.layerObjects;
+        case 'character':
+            return this.layerCharacters;
+        default:
+            return [];
+        }
     }
 
     // Met à jour l'apparence des boutons de mode en fonction du mode actif
@@ -706,36 +942,99 @@ export class RoomBuilder {
     
         switch (this.mode) {
         case 'play':
-            banner.textContent = "Mode Play Activé";
+            banner.textContent = `Jouer - ${this.layer}`;
             banner.className = "banner banner-insert";
             body.classList.add('mode-play');
             break;
         case 'insert':
-            banner.textContent = "Mode Insertion Activé";
+            banner.textContent = `Insertion - ${this.layer}`;
             banner.className = "banner banner-insert";
             body.classList.add('mode-insert');
             break;
         case 'delete':
-            banner.textContent = "Mode Suppression Activé";
+            banner.textContent = `Suppression - ${this.layer}`;
             banner.className = "banner banner-delete";
             body.classList.add('mode-delete');
             break;
         case 'select':
-            banner.textContent = "Mode Sélection Activé";
+            banner.textContent = `Selection - ${this.layer}`;
             banner.className = "banner banner-select";
             body.classList.add('mode-select');
             break;
         case 'grab':
-            banner.textContent = "Mode Saisie Activé";
+            banner.textContent = `Grab - ${this.layer}`;
             banner.className = "banner banner-grab";
             body.classList.add('mode-grab');
             break;
         default:
-            banner.textContent = "Mode Sélection Activé";
+            banner.textContent = `Selection - ${this.layer}`;
             banner.className = "banner banner-select";
             body.classList.add('mode-select');
             break;
         }
+    }
+
+    changeLayer(newLayer) {
+        // Si on clique à nouveau sur le même layer, on désactive ce layer pour afficher tous les items
+        if (this.layer === newLayer) {
+            this.layer = null; // Désactivation du layer actif
+        } else {
+            this.layer = newLayer; // Activation du nouveau layer
+        }
+    
+        this.updateLayerButtons(); // Met à jour l'état des boutons de layer dans l'UI
+        this.updateLayerInteractivity(); // Met à jour la visibilité et l'interactivité des layers
+        this.renderItemList(); // Réaffiche la liste des items filtrés selon le layer
+    }
+    
+    
+    // Fonction pour mettre à jour l'interactivité des layers
+    updateLayerInteractivity() {
+        const elementsLayer = document.getElementById('map-container-elements');
+        const objectsLayer = document.getElementById('map-container-objects');
+        const charactersLayer = document.getElementById('map-container-characters');
+
+        // Désactive les pointer-events pour les couches qui ne sont pas actives
+        elementsLayer.classList.remove('layer-active', 'layer-inactive');
+        objectsLayer.classList.remove('layer-active', 'layer-inactive');
+        charactersLayer.classList.remove('layer-active', 'layer-inactive');
+
+        // Applique les bonnes classes selon le layer actif
+        switch (this.layer) {
+        case 'element':
+            elementsLayer.classList.add('layer-active');
+            objectsLayer.classList.add('layer-inactive');
+            charactersLayer.classList.add('layer-inactive');
+            break;
+        case 'object':
+            elementsLayer.classList.add('layer-inactive');
+            objectsLayer.classList.add('layer-active');
+            charactersLayer.classList.add('layer-inactive');
+            break;
+        case 'character':
+            elementsLayer.classList.add('layer-inactive');
+            objectsLayer.classList.add('layer-inactive');
+            charactersLayer.classList.add('layer-active');
+            break;
+        case null:
+            elementsLayer.classList.remove('layer-inactive');
+            objectsLayer.classList.remove('layer-inactive');
+            charactersLayer.classList.remove('layer-inactive');
+            break;
+        default:
+            break;
+        }
+    }
+
+    updateLayerButtons() {
+        const toggleLayerElementModeButton = document.getElementById("toggle-layerElement-mode-button");
+        const toggleLayerObjectModeButton = document.getElementById("toggle-layerObject-mode-button");
+        const toggleLayerCharacterModeButton = document.getElementById("toggle-layerCharacter-mode-button");
+
+        toggleLayerElementModeButton.classList.toggle('active-mode', this.layer === 'element');
+        toggleLayerObjectModeButton.classList.toggle('active-mode', this.layer === 'object');
+        toggleLayerCharacterModeButton.classList.toggle('active-mode', this.layer === 'character');
+        
     }
     
 
