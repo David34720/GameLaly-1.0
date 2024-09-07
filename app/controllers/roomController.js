@@ -78,6 +78,7 @@ const roomController = {
             pos_y: room.start_y,
             img: user ? user.img : 'default-image.png'
         };
+        console.log('playerData', playerData);
 
         const cells = room.cells;
         const notification = null;
@@ -266,7 +267,6 @@ const roomController = {
     async getMessagesForRoom(req, res) {
         const { room_id } = req.params;
         try {
-            // Récupérer les messages avec l'ID de la cellule associée
             const messagesWithCellIds = await Message.findAll({
                 include: [{
                     model: Cell,
@@ -279,13 +279,13 @@ const roomController = {
             });
     
             if (!messagesWithCellIds.length) {
-                return res.status(404).json({ error: 'Aucun message trouvé pour cette salle' });
+                return res.status(200).json([]); // Retourner un tableau vide si aucun message n'est trouvé
             }
     
-            res.json(messagesWithCellIds);
+            return res.status(200).json(messagesWithCellIds); // Si des messages sont trouvés, les retourner
         } catch (error) {
             console.error('Erreur lors de la récupération des messages pour la salle:', error);
-            res.status(500).json({ error: 'Erreur serveur lors de la récupération des messages' });
+            return res.status(500).json({ error: 'Erreur serveur lors de la récupération des messages' });
         }
     },
     

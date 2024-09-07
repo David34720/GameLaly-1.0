@@ -180,6 +180,7 @@ var roomController = {
               pos_y: room.start_y,
               img: user ? user.img : 'default-image.png'
             };
+            console.log('playerData', playerData);
             cells = room.cells;
             notification = null;
             res.render('rooms', {
@@ -190,7 +191,7 @@ var roomController = {
               playerData: playerData
             });
 
-          case 17:
+          case 18:
           case "end":
             return _context4.stop();
         }
@@ -633,22 +634,18 @@ var roomController = {
               break;
             }
 
-            return _context11.abrupt("return", res.status(404).json({
-              error: 'Aucun message trouvé pour cette salle'
-            }));
+            return _context11.abrupt("return", res.status(200).json([]));
 
           case 7:
-            res.json(messagesWithCellIds);
-            _context11.next = 14;
-            break;
+            return _context11.abrupt("return", res.status(200).json(messagesWithCellIds));
 
           case 10:
             _context11.prev = 10;
             _context11.t0 = _context11["catch"](1);
             console.error('Erreur lors de la récupération des messages pour la salle:', _context11.t0);
-            res.status(500).json({
+            return _context11.abrupt("return", res.status(500).json({
               error: 'Erreur serveur lors de la récupération des messages'
-            });
+            }));
 
           case 14:
           case "end":

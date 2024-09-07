@@ -70,7 +70,6 @@ export class RoomBuilder {
     }
 
     async getMessagesForRoom() {
-        console.log('Récupération des messages pour la salle ' + this.roomData.id);
         try {
             const response = await fetch(`/room/get-messages-for-room/${this.roomData.id}`, {
                 method: 'GET',
@@ -84,7 +83,6 @@ export class RoomBuilder {
             }
         
             const messages = await response.json();
-            console.log('Messages reçus:', messages);
             this.messagesForRoom = messages;
 
         } catch (error) {
@@ -93,7 +91,6 @@ export class RoomBuilder {
     }
 
     async getMessageForCell(cell_id) {
-        console.log('Récupération des messages pour la cellule ' + cell_id);
         try {
             const response = await fetch(`/room/get-message-for-cell/${cell_id}`, {
                 method: 'GET',
@@ -107,7 +104,6 @@ export class RoomBuilder {
             }
     
             const message = await response.json();
-            console.log('Message reçu:', message);
     
             return message;
     
@@ -241,7 +237,6 @@ export class RoomBuilder {
             cellElement.style.position = "absolute";
             cellElement.style.left = `${cell.posX * cell_size}px`;
             cellElement.style.top = `${cell.posY * cell_size}px`;
-            console.log('layer', cell.layer_type, cell);
             // Afficher l'item si la cellule contient un item
             if (cell.exists && cell.item) {
                 this.renderItemInCell(cellElement, cell.item);
@@ -253,6 +248,7 @@ export class RoomBuilder {
             cellElement.addEventListener('mousedown', () => this.onMouseDown(cell, cellElement));
             cellElement.addEventListener('mouseover', () => this.onMouseOver(cell, cellElement));
         });
+        this.updateLayerInteractivity();
     }
 
 
@@ -289,7 +285,6 @@ export class RoomBuilder {
     // Gère l'interaction avec une cellule en fonction du mode sélectionné (sélection, insertion, suppression).
     handleCellInteraction(cell, cellElement) {
         const cellKey = `${cell.posX}-${cell.posY}`; // Clé unique pour identifier chaque cellule.
-    
         // Choisissez le bon layer en fonction du layer actif
         let layerCells;
         switch (this.layer) {
@@ -329,6 +324,7 @@ export class RoomBuilder {
             this.selectedCells.add(cellKey); // Ajoute la cellule sélectionnée à l'ensemble des cellules à sauvegarder
             cellElement.style.backgroundColor = "#fff"; // Indication visuelle
         }
+       
     }
     
 
@@ -357,7 +353,6 @@ export class RoomBuilder {
             console.warn('Aucune cellule sélectionnée pour la sauvegarde ou suppression ou sauvegarde déjà en cours.');
             return;
         }
-        console.log('selectedCells:', this.selectedCells);
         this.isSaving = true; // Empêche les sauvegardes répétées.
 
         // Selection du layer actif
@@ -384,13 +379,12 @@ export class RoomBuilder {
         }
     
         const cellsData = Array.from(this.selectedCells).map(key => {
-            console.log('cellData key:', key);
             const [posX, posY] = key.split('-').map(Number); // Récupère les coordonnées de la cellule à partir de la clé.
             // switch ()
 
 
             const cell = layerCells.find(c => c.posX === posX && c.posY === posY); // Trouve la cellule correspondante.
-            console.log('cellData', cell);
+            
             return {
                 room_id: this.roomData.id, // Identifiant de la pièce.
                 pos_x: cell.posX, // Coordonnée X de la cellule.
@@ -465,7 +459,7 @@ export class RoomBuilder {
             const selectedItem = this.items.find(item => item.id === cell.item); // Trouve l'objet item correspondant à l'ID
             if (selectedItem) {
                 this.selectedItem = selectedItem; // Définit l'item sélectionné
-                console.log(`Sélection de l'item : ${selectedItem.name}`);
+               
                 this.highlightSelectedItem(selectedItem); // Met en évidence l'item dans la liste si besoin
             } else {
                 console.error(`Item avec ID ${cell.item} non trouvé.`);
@@ -477,7 +471,7 @@ export class RoomBuilder {
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
     async showCellDetails(cell) {
-        console.log(`Affiche les détails de la cellule : (${cell.posX}, ${cell.id})`);
+        
         const detailsContainer = document.getElementById("cell-details");
     
         if (!detailsContainer) {
@@ -487,7 +481,7 @@ export class RoomBuilder {
     
         // Récupérer le message pour cette cellule
         const messageForCell = await this.getMessageForCell(cell.id);
-        console.log('Message pour la cellule:', messageForCell);
+       
     
         // Si le message est vide ou absent, afficher un texte par défaut
         const messageContent = messageForCell ? messageForCell.text : 'Aucun message trouvé pour cette cellule';
@@ -498,6 +492,8 @@ export class RoomBuilder {
                 <input type="hidden" name="room_id" value="${this.roomData.id}">
                 <input type="hidden" name="pos_x" value="${cell.posX}">
                 <input type="hidden" name="pos_y" value="${cell.posY}">
+                <input type="hidden" name="layer_type" value="${cell.layer_type}">
+                <input type="hidden" name="cell_id" value="${cell.id}">
                 
                 <!-- Sélection de l'item -->
                 <div class="mb-3">
@@ -598,7 +594,7 @@ export class RoomBuilder {
     async autoSubmitForm(form) {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData);
-        console.log('..... data   ' + formData);
+        console.log('data', data);
         try {
             const response = await fetch('/room/update-cell', {
                 method: 'POST',
@@ -611,11 +607,37 @@ export class RoomBuilder {
             if (!response.ok) {
                 throw new Error('Erreur lors de la mise à jour de la cellule');
             }
+            
+            let layerCells;
+            switch (data.layer_type) {
+            case 'element':
+                layerCells = this.layerElements;
+                break;
+            case 'object':
+                layerCells = this.layerObjects;
+                break;
+            case 'character':
+                layerCells = this.layerCharacters;
+                break;
+            default:
+                layerCells = this.cells;
+                break;
+            }
     
-            console.log('Mise à jour de la cellule réussie');
+            // Vérifiez si la cellule fait partie du layer courant
+            const layerCell = layerCells.find(lCell => lCell.posX === Number(data.pos_x) && lCell.posY === Number(data.pos_y));
+
+            console.log('layerCell', layerCell);
+            this.placeItemInCell(layerCell, data.item_id); // Insère un item dans la cellule
+
+
+            this.renderMap();
+    
+            
         } catch (error) {
             console.error('Erreur lors de la soumission automatique du formulaire :', error);
         }
+
     }
 
     async messageCellSubmitForm() {
@@ -642,7 +664,7 @@ export class RoomBuilder {
                 throw new Error('Erreur lors de la mise à jour du message de la cellule');
             }
     
-            console.log('Mise à jour du message de la cellule réussie');
+           
         } catch (error) {
             console.error('Erreur lors de la soumission automatique du formulaire :', error);
         }
@@ -652,7 +674,7 @@ export class RoomBuilder {
 
     // Place un item dans une cellule spécifique et met à jour son apparence.
     placeItemInCell(cell, itemId) {
-        console.log(`Placing item ${itemId} in cell at (${cell.posX}, ${cell.posY})`);
+     
         cell.exists = true; // Marque la cellule comme existante.
         cell.item = itemId; // Associe l'item sélectionné à la cellule.
         this.updateCellAppearance(cell, false); // Met à jour l'apparence de la cellule.
@@ -660,18 +682,18 @@ export class RoomBuilder {
 
     // Supprime un item ou un message d'une cellule spécifique et met à jour son apparence.
     deleteCell(cell) {
-        console.log(`Deleting cell at (${cell.posX}, ${cell.posY})`);
+      
         cell.exists = false; // Marque la cellule comme vide.
         cell.item = null; // Supprime l'item de la cellule.
         cell.message = null; // Supprime le message de la cellule.
         this.updateCellAppearance(cell); // Met à jour l'apparence de la cellule.
-        console.log(`Cell exists status: ${cell.exists}`);
+       
     }
 
 
     // Affiche un item dans une cellule spécifique en utilisant son élément HTML.
     renderItemInCell(cellElement, itemId) {
-        const item = this.items.find(item => item.id === itemId); // Trouve l'item correspondant.
+        const item = this.items.find(item => item.id === Number(itemId)); // Trouve l'item correspondant.
         if (item) {
             // Supprime l'ancienne image s'il y en a déjà une dans ce cellElement
             while (cellElement.firstChild) {
@@ -736,7 +758,7 @@ export class RoomBuilder {
             // Ajoute un écouteur de clic pour sélectionner l'item
             itemElement.addEventListener('click', () => {
                 this.selectedItem = item; // Définit l'item sélectionné lors du clic
-                console.log(`Item sélectionné: ${item.name}`);
+              
             });
     
             itemElement.querySelector("img").draggable = false; // Empêche le glisser-déposer de l'image

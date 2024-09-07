@@ -137,7 +137,7 @@ export class GameEngine {
             inventory: []
         };
     
-        if (!this.player.x || !this.player.y) {
+        if (this.player.x == null || this.player.y == null) {
             console.error('Error: Player position is undefined or invalid', this.player);
         }
     
