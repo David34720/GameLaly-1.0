@@ -85,7 +85,11 @@ export class GameEngine {
     }
 
     async initializeGame() {
-        await this.initializeRooms(); // Attendre que la salle soit complètement générée
+        if (this.currentRoom) {
+            console.warn("Game already initialized, skipping initialization.");
+            return;
+        }
+        await this.initializeRooms();
         this.initializeItems();
         this.initializePlayer();
         this.startGame();
@@ -95,15 +99,22 @@ export class GameEngine {
         if (!this.config || !this.config.initialRoomData) {
             throw new Error('Initial room data is missing in the configuration.');
         }
-        console.log("Initial room data:", this.config.initialRoomData);
-        
+    
         const roomData = this.config.initialRoomData;
         const itemsData = this.config.itemsData || [];
         const roomGenerator = new RoomGenerator(roomData, itemsData);
-        
-        // Passez la configuration de GameEngine ici
+    
+        // Générer la pièce
         this.currentRoom = roomGenerator.generateRoom(this.config);
+    
+        // Vérifier que `roomBuilder` est bien assigné
+        if (!this.currentRoom) {
+            throw new Error('RoomBuilder initialization failed');
+        }
+    
+        console.log("RoomBuilder accessible dans GameEngine:", this.currentRoom);
     }
+    
     
     generateRoomAsync(roomGenerator) {
         return new Promise((resolve, reject) => {
@@ -156,9 +167,15 @@ export class GameEngine {
     }
     
     bindEvents() {
+        if (this.eventsBound) {
+            console.warn("Events already bound, skipping.");
+            return;
+        }
         document.addEventListener("keydown", (event) => this.handleKeydown(event));
-        console.log("Event listener for keydown attached"); // Ajout de ce log pour confirmer l'attachement
+        this.eventsBound = true;
+        console.log("Event listener for keydown attached");
     }
+
 
     handleKeydown(event) {
         const currentTime = Date.now();
@@ -307,9 +324,34 @@ export class GameEngine {
     
 
     isPositionValid(x, y) {
-        return x >= 0 && x < this.currentRoom.roomData.nb_cols &&
-               y >= 0 && y < this.currentRoom.roomData.nb_rows;
+        // Vérifie si les coordonnées sont dans les limites de la carte
+        const withinBounds = x >= 0 && x < this.currentRoom.roomData.nb_cols &&
+                             y >= 0 && y < this.currentRoom.roomData.nb_rows;
+    
+        if (!withinBounds) {
+            return false; // En dehors des limites
+        }
+    
+        // Accéder aux cellules de l'object layer
+        if (this.currentRoom && this.currentRoom.layerObjects) {
+            const targetCell = this.currentRoom.layerObjects.find(c => c.posX === x && c.posY === y);
+            
+            // Si la cellule est un obstacle, retourner false
+            if (targetCell && targetCell.isObstacle) {
+                console.log(`Position (${x}, ${y}) bloquée par un obstacle :`, targetCell);
+                return false;
+            }
+        } else {
+            console.error('layerObjects est indéfini ou inaccessible');
+            return false;
+        }
+    
+        return true; // Position valide
     }
+    
+    
+    
+    
 
     clearCell(x, y) {
         // Logique pour restaurer la cellule à son état initial après que le joueur l'a traversée

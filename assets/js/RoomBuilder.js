@@ -15,7 +15,7 @@ export class RoomBuilder {
         this.items = items; // Liste des items disponibles pour être placés dans les cellules
         this.cells = []; // Tableau pour stocker les cellules de la pièce
         this.selectedItem = null; // Item actuellement sélectionné pour insertion dans une cellule
-        this.mode = 'select'; // Mode courant : 'select', 'insert', ou 'delete'
+        this.mode = 'play'; // Mode courant : 'select', 'insert', ou 'delete'
         this.layer = 'element'; // Layer courant : 'objet', 'character', ou 'element'
         this.selectedCells = new Set(); // Ensemble des cellules sélectionnées
         this.isMouseDown = false; // Indicateur pour savoir si la souris est enfoncée
@@ -45,7 +45,7 @@ export class RoomBuilder {
         this.renderMap(); // Affiche les cellules sur la carte (dans le conteneur HTML).
         this.renderItemList(); // Affiche la liste des items disponibles pour l'utilisateur.
         this.setupEventListeners(); // Configure les événements utilisateur (clics, modes d'interaction, etc.).
-        this.updateModeUI(); // Met à jour l'affichage de l'interface utilisateur selon le mode actif.
+        this.changeMode(('play')); // Met à jour l'affichage de l'interface utilisateur selon le mode actif.
         this.initPlayerPosition(); // Initialise la position du joueur
         this.getMessagesForRoom(); // initialise la liste des messages pour la room
         
@@ -125,66 +125,144 @@ export class RoomBuilder {
         const { nb_rows, nb_cols, cell_size } = this.roomData;
     
         // Créer 3 layers pour les différents types d'items
-        this.layerCharacters = []; // Items où item_type === 9 (personnages)
-        this.layerObjects = []; // Items où is_object === true (objets)
-        this.layerElements = []; // Les autres items ou cellules vides
-
-
-
-        // Crée les cellules
+        this.layerCharacters = [];
+        this.layerObjects = [];
+        this.layerElements = [];
+    
         for (let y = 0; y < nb_rows; y++) {
             for (let x = 0; x < nb_cols; x++) {
                 const baseCell = {
                     x: x * cell_size,
                     y: y * cell_size,
+                    size: cell_size,
+                    height: 1,
+                    width: 1,
+                    offset_x: 0,
+                    offset_y: 0,
                     posX: x,
                     posY: y,
                     exists: false,
                     item: null,
                     message: null,
                     layer_type: 'default',
+                    isObstacle: false // Par défaut, pas d'obstacle
                 };
-        
+    
                 const cellsFinded = this.roomData.cells.filter(c => c.pos_x === x && c.pos_y === y);
-        
+    
                 if (cellsFinded.length > 0) {
                     cellsFinded.forEach(c => {
-                        const cell = { ...baseCell }; // Clone the baseCell for each layer
+                        const cell = { ...baseCell };
                         cell.exists = true;
                         cell.item = c.item_id;
                         cell.message = c.message_id;
                         cell.id = c.id;
-        
+    
                         const item = this.items.find(i => i.id === cell.item);
                         if (item) {
                             if (item.item_type === 9) {
+                                // Personnage
                                 cell.layer_type = 'personnage';
-                                this.layerCharacters.push(cell);
+                                this.replaceCellIfExists(this.layerCharacters, cell); // Remplacer si déjà vide
+                                this.addCellIfNotExists(this.layerElements, { ...baseCell, layer_type: 'element' });
+                                this.addCellIfNotExists(this.layerObjects, { ...baseCell, layer_type: 'object' });
                             } else if (item.is_object) {
+                                // Objet
                                 cell.layer_type = 'object';
-                                this.layerObjects.push(cell);
+                                cell.height = c.height;
+                                cell.width = c.width;
+                                cell.offset_x = c.offset_x;
+                                cell.offset_y = c.offset_y;
+                                this.replaceCellIfExists(this.layerObjects, cell); // Remplacer si déjà vide
+                                this.addCellIfNotExists(this.layerElements, { ...baseCell, layer_type: 'element' });
+                                this.addCellIfNotExists(this.layerCharacters, { ...baseCell, layer_type: 'personnage' });
+    
+                                // Si l'objet est un obstacle, marquer la cellule comme obstacle
+                                if (item.is_obstacle) {
+                                    cell.isObstacle = true;
+                                    console.log('Cellule ' + cell.posX + ', ' + cell.posY + ' est un obstacle');
+                                }
+    
+                                // Marquer les cellules couvertes par l'objet
+                                this.markCoveredCells(cell);
                             } else {
+                                // Élément
                                 cell.layer_type = 'element';
-                                this.layerElements.push(cell);
+                                this.replaceCellIfExists(this.layerElements, cell); // Remplacer si déjà vide
+                                this.addCellIfNotExists(this.layerObjects, { ...baseCell, layer_type: 'object' });
+                                this.addCellIfNotExists(this.layerCharacters, { ...baseCell, layer_type: 'personnage' });
                             }
                         }
-        
+    
+                        // Ajouter la cellule à la liste générale des cellules
                         this.cells.push(cell);
                     });
                 } else {
-                    const emptyCell = { ...baseCell };
-                    emptyCell.layer_type = 'element'; // Default to elements for empty cells
-                    this.layerElements.push(emptyCell);
-                    this.layerObjects.push({ ...baseCell, layer_type: 'object' });
-                    this.layerCharacters.push({ ...baseCell, layer_type: 'personnage' });
-        
-                    this.cells.push(emptyCell);
+                    // Crée une cellule vide pour chaque layer si elle n'existe pas encore
+                    const emptyCellElement = { ...baseCell, layer_type: 'element' };
+                    const emptyCellObject = { ...baseCell, layer_type: 'object' };
+                    const emptyCellCharacter = { ...baseCell, layer_type: 'personnage' };
+    
+                    // Ajouter la cellule vide dans chaque layer
+                    this.addCellIfNotExists(this.layerElements, emptyCellElement);
+                    this.addCellIfNotExists(this.layerObjects, emptyCellObject);
+                    this.addCellIfNotExists(this.layerCharacters, emptyCellCharacter);
+    
+                    // Ajouter la cellule vide à la liste générale des cellules
+                    this.cells.push(emptyCellElement);
                 }
             }
         }
-        
+        this.markAllCoveredCells();
     }
     
+    // Fonction utilitaire pour ajouter une cellule seulement si elle n'existe pas déjà dans le layer
+    addCellIfNotExists(layer, newCell) {
+        const exists = layer.some(c => c.posX === newCell.posX && c.posY === newCell.posY);
+        if (!exists) {
+            layer.push(newCell);
+        }
+    }
+    
+    // Fonction utilitaire pour remplacer une cellule vide existante si elle existe
+    replaceCellIfExists(layer, newCell) {
+        const index = layer.findIndex(c => c.posX === newCell.posX && c.posY === newCell.posY);
+        if (index !== -1 && !layer[index].exists) {
+            layer[index] = newCell; // Remplacer la cellule vide par celle avec l'item
+        } else if (index === -1) {
+            layer.push(newCell); // Si elle n'existe pas, on l'ajoute
+        }
+    }
+    
+    
+    
+    
+    markAllCoveredCells() {
+        // On parcourt uniquement les cellules contenant des objets qui sont des obstacles
+        this.layerObjects.forEach(cell => {
+            if (cell.isObstacle) {
+                this.markCoveredCells(cell); // Marque les cellules couvertes par cet objet
+            }
+        });
+    }
+    
+    markCoveredCells(cell) {
+        const startX = cell.posX;
+        const startY = cell.posY;
+        const endX = startX + (cell.width || 1);
+        const endY = startY + (cell.height || 1);
+    
+        for (let y = startY; y < endY; y++) {
+            for (let x = startX; x < endX; x++) {
+                // Marquer chaque cellule couverte comme un obstacle
+                const coveredCell = this.layerObjects.find(c => c.posX === x && c.posY === y);
+                if (coveredCell) {
+                    coveredCell.isObstacle = true; // Marquer la cellule comme couverte par un obstacle
+                    console.log('Cellule couverte:', coveredCell);
+                }
+            }
+        }
+    }
     
     
     // Affiche la carte en créant les éléments HTML pour chaque cellule et en les positionnant dans le conteneur principal.
@@ -228,32 +306,34 @@ export class RoomBuilder {
     
         // On efface d'abord tout ce qui existe dans le container
         container.innerHTML = '';
-
+    
         layer.forEach(cell => {
             const cellElement = document.createElement("div");
             cellElement.className = "cell";
             cellElement.style.width = `${cell_size}px`;
             cellElement.style.height = `${cell_size}px`;
-            // 
-            // cellElement.style.backgroundColor = color;
-
+    
             // Utilisation de position absolute pour positionner les cellules
             cellElement.style.position = "absolute";
             cellElement.style.left = `${cell.posX * cell_size}px`;
             cellElement.style.top = `${cell.posY * cell_size}px`;
+            cellElement.style.overflow = "visible"; // Permet à l'image de dépasser la cellule
+            
             // Afficher l'item si la cellule contient un item
             if (cell.exists && cell.item) {
-                this.renderItemInCell(cellElement, cell.item);
+                this.renderItemInCell(cellElement, cell); // Passer `cell` comme argument ici
             }
-
+    
             container.appendChild(cellElement);
-
+    
             // Ajout des événements d'interaction pour chaque cellule
             cellElement.addEventListener('mousedown', () => this.onMouseDown(cell, cellElement));
             cellElement.addEventListener('mouseover', () => this.onMouseOver(cell, cellElement));
         });
         this.updateLayerInteractivity();
     }
+    
+    
 
 
     // Gère le clic initial sur une cellule, en fonction du mode courant (sélection, insertion, suppression).
@@ -314,6 +394,7 @@ export class RoomBuilder {
     
         // Sélection de cellule
         if (this.mode === 'select') {
+            console.log('Selected cell:', layerCell);
             this.selectCell(layerCell); // Sélectionne la cellule pour afficher ses détails
             return;
         }
@@ -458,7 +539,7 @@ export class RoomBuilder {
 
     // Sélectionne une cellule et affiche ses détails dans l'interface utilisateur.
     selectCell(cell) {
-        console.log(`Sélection de la cellule : (${cell.posX}, ${cell.posY}, ${cell.id})`);
+        console.log(`Sélection de la cellule : (${cell.posX}, ${cell.posY}, ${cell.item})`);
         this.showCellDetails(cell); // Affiche les détails de la cellule sélectionnée.
     
         if (cell.exists && cell.item) {
@@ -477,7 +558,7 @@ export class RoomBuilder {
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
     // Affiche les détails de la cellule sélectionnée dans un conteneur HTML.
     async showCellDetails(cell) {
-        
+        console.log(`Affichage des détails de la cellule : (${cell.posX}, ${cell.posY}, ${cell.item})`);
         const detailsContainer = document.getElementById("cell-details");
     
         if (!detailsContainer) {
@@ -520,8 +601,10 @@ export class RoomBuilder {
                     <label for="position" class="form-label">Position (x, y)</label>
                     <input type="text" class="form-control" id="position" name="position" value="(${cell.posX}, ${cell.posY})" readonly>
                 </div>
-    
+                
                 <!-- Largeur et hauteur avec des barres de défilement -->
+                ${cell.layer_type === 'object' ? `
+                <!-- Largeur et hauteur uniquement pour les objets -->
                 <div class="mb-3">
                     <label for="width" class="form-label">Largeur</label>
                     <div class="d-flex align-items-center">
@@ -534,6 +617,19 @@ export class RoomBuilder {
                         <input type="range" class="form-range" id="height" name="height" min="1" max="10" value="${cell.height}">
                     </div>
                 </div>
+                <div class="mb-3">
+                    <label for="height" class="form-label">Position Horizontale</label>
+                    <div class="d-flex align-items-center">
+                        <input type="range" class="form-range" id="offset_x" name="offset_x" min="0" max="${cell.size}" value="${cell.offset_x}">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="height" class="form-label">Position Horizontale</label>
+                    <div class="d-flex align-items-center">
+                        <input type="range" class="form-range" id="offset_y" name="offset_y" min="0" max="${cell.size}" value="${cell.offset_y}">
+                    </div>
+                </div>
+                ` : ''}
             </form>
     
             <!-- Message -->
@@ -548,41 +644,42 @@ export class RoomBuilder {
         `;
     
         // Assurez-vous que le HTML est injecté avant d'appeler les écouteurs d'événements
-        this.attachFormListeners();
+        this.attachFormListeners(cell.layer_type);
         this.messageCellSubmitForm();
     }
     
 
 
     // Fonction pour attacher les écouteurs aux éléments du formulaire
-    attachFormListeners() {
+    attachFormListeners(layer_type) {
         const form = document.getElementById('cell-edit-form');
     
         if (!form) {
             console.error('Le formulaire de la cellule est introuvable.');
             return;
         }
-    
-        // Synchroniser les champs de largeur et hauteur avec les sliders
-        const widthSlider = document.getElementById('width');
-        const heightSlider = document.getElementById('height');
-    
-        if (widthSlider) {
-            widthSlider.addEventListener('input', () => {
-                this.autoSubmitForm(form);
-            });
-        } else {
-            console.warn('Le slider de largeur est introuvable.');
+        if (layer_type === 'object') {
+            // Synchroniser les champs de largeur et hauteur avec les sliders
+            const widthSlider = document.getElementById('width');
+            const heightSlider = document.getElementById('height');
+            
+            if (widthSlider) {
+                widthSlider.addEventListener('input', () => {
+                    this.autoSubmitForm(form);
+                });
+            } else {
+                console.warn('Le slider de largeur est introuvable.');
+            }
+            
+            if (heightSlider) {
+                heightSlider.addEventListener('input', () => {
+                    this.autoSubmitForm(form);
+                });
+            } else {
+                console.warn('Le slider de hauteur est introuvable.');
+            }
+            
         }
-    
-        if (heightSlider) {
-            heightSlider.addEventListener('input', () => {
-                this.autoSubmitForm(form);
-            });
-        } else {
-            console.warn('Le slider de hauteur est introuvable.');
-        }
-    
         // Soumission automatique lorsque l'utilisateur modifie le formulaire
         form.addEventListener('change', () => {
             this.autoSubmitForm(form);
@@ -698,8 +795,8 @@ export class RoomBuilder {
 
 
     // Affiche un item dans une cellule spécifique en utilisant son élément HTML.
-    renderItemInCell(cellElement, itemId) {
-        const item = this.items.find(item => item.id === Number(itemId)); // Trouve l'item correspondant.
+    renderItemInCell(cellElement, cell) {
+        const item = this.items.find(item => item.id === Number(cell.item)); // Trouve l'item correspondant.
         if (item) {
             // Supprime l'ancienne image s'il y en a déjà une dans ce cellElement
             while (cellElement.firstChild) {
@@ -710,15 +807,27 @@ export class RoomBuilder {
             itemElement.src = item.img; // Définit la source de l'image.
             itemElement.alt = item.name; // Définit l'alt pour l'accessibilité.
             itemElement.title = item.description; // Définit le titre pour afficher la description au survol.
-            itemElement.style.position = "relative"; // Positionne l'image à l'intérieur de la cellule.
-            itemElement.style.width = "100%"; // Définit la largeur de l'image.
-            itemElement.style.height = "100%"; // Définit la hauteur de l'image.
-            itemElement.draggable = false; // Empêche le glisser-déposer par défaut de l'image.
-            cellElement.appendChild(itemElement); // Ajoute l'image de l'item à la cellule.
+    
+            // Appliquer les dimensions de l'image en fonction de la taille de l'objet
+            itemElement.style.position = "absolute"; // Permet à l'image de dépasser la cellule
+            itemElement.style.width = `${cell.width * cell.size}px`; // Appliquer la largeur de l'objet
+            itemElement.style.height = `${cell.height * cell.size}px`; // Appliquer la hauteur de l'objet
+    
+            // Appliquer les offsets (décalages) pour positionner l'image correctement
+            itemElement.style.left = `${cell.offset_x}px`; // Décalage horizontal
+            itemElement.style.top = `${cell.offset_y}px`; // Décalage vertical
+    
+            // Désactiver le glisser-déposer par défaut de l'image
+            itemElement.draggable = false; 
+            
+            // Ajouter l'image à la cellule
+            cellElement.appendChild(itemElement);
         } else {
-            console.error(`Item avec ID ${itemId} non trouvé.`);
+            console.error(`Item avec ID ${cell.item} non trouvé.`);
         }
     }
+    
+    
 
     // Affiche la liste des items disponibles pour être placés dans les cellules.
     renderItemList() {
@@ -803,8 +912,6 @@ export class RoomBuilder {
     
         // Écouteurs pour les boutons de mode
         playModeButton.addEventListener('click', async () => {
-            this.changeMode('play');
-            this.updateModeUI();
             
             // Appeler initializeGame et attendre qu'il termine
             try {
@@ -812,6 +919,7 @@ export class RoomBuilder {
             } catch (error) {
                 console.error("Erreur lors de l'initialisation du jeu:", error);
             }
+            this.changeMode('play');
         });
     
         insertModeButton.addEventListener('click', () => {
@@ -936,9 +1044,14 @@ export class RoomBuilder {
     // Fonction pour changer le mode et mettre à jour l'interface
     changeMode(newMode) {
         this.mode = newMode;
+        console.log("Mode changé en :", this.mode);
+       
+        this.layer = null;
+        this.updateLayerButtons(); // Met à jour l'état des boutons de layer dans l'UI
+        this.updateLayerInteractivity(); // Met à jour la visibilité et l'interactivité des layers
+        this.renderItemList(); // Réaffiche la liste des items filtrés selon le layer
+        this.updateModeUI(); // Met à jour l'UI avec le nouveau mode et layer
         this.updateModeButtons();
-        this.updateModeUI();
-        this.updateLayerInteractivity();
     
        
     }
@@ -979,7 +1092,7 @@ export class RoomBuilder {
     
         let itemText = this.selectedItem ? ` - ${this.selectedItem.name}` : ''; // Vérifie si un item est sélectionné
         let bannerText = '';
-    
+        console.log("Mode update en :", this.mode);
         switch (this.mode) {
         case 'play':
             bannerText = `Jouer - ${this.layer}`;

@@ -79,6 +79,7 @@ body {
     width: 100%; /* S'assurer que chaque conteneur prend toute la largeur disponible */
     height: 100%; /* S'assurer qu'il occupe toute la hauteur disponible */
     overflow: hidden; /* Assure que tout est contenu dans le conteneur */
+    background-color: #fff;
 }
 
 /* Styles pour chaque layer, superposition grâce à position: absolute */
@@ -94,6 +95,7 @@ body {
     pointer-events: none; /* Par défaut, on désactive les interactions */
     opacity: 1; /* Les layers non actifs sont moins visibles */
     transition: opacity 0.3s ease; /* Transition fluide pour le changement d'opacité */
+    
 }
 /* .map-layer > * {
     background-color: transparent !important;
@@ -115,7 +117,7 @@ body {
 .layer-active {
     pointer-events: all; /* Les événements de souris sont actifs pour le layer sélectionné */
     opacity: 0.9; /* Opacité pleine pour le layer actif */
-    z-index: 100 !important; /* Le z-index le plus haut pour le layer actif */ !important;
+    z-index: 100 !important; /* Le z-index le plus haut pour le layer actif */
 }
 .layer-inactive {
     opacity: 0.2; /* Opacité minimale pour les autres layers */
@@ -125,7 +127,7 @@ body {
 
 .grid-cell {
     background-color: #fff;
-    border: 1px solid #ccc;
+    border: 1px solid #2e2d2d0b;
     position: relative;
 }
 
@@ -137,11 +139,16 @@ body {
 .cell {
     position: absolute;
     box-sizing: border-box;
-    border: 1px solid #ccc;
+    border: 1px solid #2e2d2d0d;
     display: flex;
     align-items: center;
     justify-content: center;
     pointer-events: all;
+    filter: drop-shadow(1px -5px 12px rgba(0, 0, 0, 0.2));
+}
+
+#player-element {
+    z-index: 100;
 }
 
 

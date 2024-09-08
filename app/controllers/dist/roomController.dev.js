@@ -498,7 +498,7 @@ var roomController = {
   },
   // Méthode pour mettre à jour une cellule, incluant la gestion de la largeur et de la hauteur
   updateCell: function updateCell(req, res) {
-    var _req$body2, cell_id, room_id, layer_type, pos_x, pos_y, item_id, message_id, message, width, height, cell, newMessageId, existingMessage, newMessage;
+    var _req$body2, cell_id, layer_type, pos_x, pos_y, item_id, width, height, offset_x, offset_y, cell;
 
     return regeneratorRuntime.async(function updateCell$(_context10) {
       while (1) {
@@ -506,7 +506,7 @@ var roomController = {
           case 0:
             _context10.prev = 0;
             console.log('Update cell data received:', req.body);
-            _req$body2 = req.body, cell_id = _req$body2.cell_id, room_id = _req$body2.room_id, layer_type = _req$body2.layer_type, pos_x = _req$body2.pos_x, pos_y = _req$body2.pos_y, item_id = _req$body2.item_id, message_id = _req$body2.message_id, message = _req$body2.message, width = _req$body2.width, height = _req$body2.height;
+            _req$body2 = req.body, cell_id = _req$body2.cell_id, layer_type = _req$body2.layer_type, pos_x = _req$body2.pos_x, pos_y = _req$body2.pos_y, item_id = _req$body2.item_id, width = _req$body2.width, height = _req$body2.height, offset_x = _req$body2.offset_x, offset_y = _req$body2.offset_y;
             _context10.next = 5;
             return regeneratorRuntime.awrap(Cell.findOne({
               where: {
@@ -527,82 +527,39 @@ var roomController = {
             }));
 
           case 8:
-            newMessageId = message_id;
-
-            if (!message) {
-              _context10.next = 23;
-              break;
-            }
-
-            if (!message_id) {
-              _context10.next = 19;
-              break;
-            }
-
-            _context10.next = 13;
-            return regeneratorRuntime.awrap(Message.findByPk(message_id));
-
-          case 13:
-            existingMessage = _context10.sent;
-
-            if (!existingMessage) {
-              _context10.next = 17;
-              break;
-            }
-
-            _context10.next = 17;
-            return regeneratorRuntime.awrap(existingMessage.update({
-              text: message
-            }));
-
-          case 17:
-            _context10.next = 23;
-            break;
-
-          case 19:
-            _context10.next = 21;
-            return regeneratorRuntime.awrap(Message.create({
-              room_id: room_id,
-              text: message
-            }));
-
-          case 21:
-            newMessage = _context10.sent;
-            newMessageId = newMessage.id;
-
-          case 23:
-            _context10.next = 25;
+            _context10.next = 10;
             return regeneratorRuntime.awrap(cell.update({
               item_id: item_id || null,
-              message_id: newMessageId || null,
               width: width || 1,
               height: height || 1,
               layer_type: layer_type || 'element',
               pos_x: pos_x || 0,
-              pos_y: pos_y || 0
+              pos_y: pos_y || 0,
+              offset_x: offset_x || 0,
+              offset_y: offset_y || 0
             }));
 
-          case 25:
+          case 10:
             res.status(200).json({
               message: 'Cellule mise à jour avec succès'
             });
-            _context10.next = 32;
+            _context10.next = 17;
             break;
 
-          case 28:
-            _context10.prev = 28;
+          case 13:
+            _context10.prev = 13;
             _context10.t0 = _context10["catch"](0);
             console.error('Erreur lors de la mise à jour de la cellule:', _context10.t0);
             res.status(500).json({
               error: 'Erreur lors de la mise à jour de la cellule.'
             });
 
-          case 32:
+          case 17:
           case "end":
             return _context10.stop();
         }
       }
-    }, null, null, [[0, 28]]);
+    }, null, null, [[0, 13]]);
   },
   getMessagesForRoom: function getMessagesForRoom(req, res) {
     var room_id, messagesWithCellIds;

@@ -41,16 +41,24 @@ function () {
         while (1) {
           switch (_context.prev = _context.next) {
             case 0:
-              _context.next = 2;
+              if (!this.currentRoom) {
+                _context.next = 3;
+                break;
+              }
+
+              console.warn("Game already initialized, skipping initialization.");
+              return _context.abrupt("return");
+
+            case 3:
+              _context.next = 5;
               return regeneratorRuntime.awrap(this.initializeRooms());
 
-            case 2:
-              // Attendre que la salle soit complètement générée
+            case 5:
               this.initializeItems();
               this.initializePlayer();
               this.startGame();
 
-            case 5:
+            case 8:
             case "end":
               return _context.stop();
           }
@@ -64,12 +72,17 @@ function () {
         throw new Error('Initial room data is missing in the configuration.');
       }
 
-      console.log("Initial room data:", this.config.initialRoomData);
       var roomData = this.config.initialRoomData;
       var itemsData = this.config.itemsData || [];
-      var roomGenerator = new _RoomGenerator.RoomGenerator(roomData, itemsData); // Passez la configuration de GameEngine ici
+      var roomGenerator = new _RoomGenerator.RoomGenerator(roomData, itemsData); // Générer la pièce
 
-      this.currentRoom = roomGenerator.generateRoom(this.config);
+      this.currentRoom = roomGenerator.generateRoom(this.config); // Vérifier que `roomBuilder` est bien assigné
+
+      if (!this.currentRoom) {
+        throw new Error('RoomBuilder initialization failed');
+      }
+
+      console.log("RoomBuilder accessible dans GameEngine:", this.currentRoom);
     }
   }, {
     key: "generateRoomAsync",
@@ -131,10 +144,16 @@ function () {
     value: function bindEvents() {
       var _this = this;
 
+      if (this.eventsBound) {
+        console.warn("Events already bound, skipping.");
+        return;
+      }
+
       document.addEventListener("keydown", function (event) {
         return _this.handleKeydown(event);
       });
-      console.log("Event listener for keydown attached"); // Ajout de ce log pour confirmer l'attachement
+      this.eventsBound = true;
+      console.log("Event listener for keydown attached");
     }
   }, {
     key: "handleKeydown",
@@ -293,7 +312,29 @@ function () {
   }, {
     key: "isPositionValid",
     value: function isPositionValid(x, y) {
-      return x >= 0 && x < this.currentRoom.roomData.nb_cols && y >= 0 && y < this.currentRoom.roomData.nb_rows;
+      // Vérifie si les coordonnées sont dans les limites de la carte
+      var withinBounds = x >= 0 && x < this.currentRoom.roomData.nb_cols && y >= 0 && y < this.currentRoom.roomData.nb_rows;
+
+      if (!withinBounds) {
+        return false; // En dehors des limites
+      } // Accéder aux cellules de l'object layer
+
+
+      if (this.currentRoom && this.currentRoom.layerObjects) {
+        var targetCell = this.currentRoom.layerObjects.find(function (c) {
+          return c.posX === x && c.posY === y;
+        }); // Si la cellule est un obstacle, retourner false
+
+        if (targetCell && targetCell.isObstacle) {
+          console.log("Position (".concat(x, ", ").concat(y, ") bloqu\xE9e par un obstacle :"), targetCell);
+          return false;
+        }
+      } else {
+        console.error('layerObjects est indéfini ou inaccessible');
+        return false;
+      }
+
+      return true; // Position valide
     }
   }, {
     key: "clearCell",

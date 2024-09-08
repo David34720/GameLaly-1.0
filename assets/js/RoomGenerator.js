@@ -50,14 +50,14 @@ export class RoomGenerator {
             throw new Error('Les données de la pièce ou les items sont manquants.');
         }
         try {
-            this.room = new RoomBuilder(this.roomData, this.itemsData, gameConfig);
+            this.room = new RoomBuilder(this.roomData, this.itemsData, gameConfig); // Instancier RoomBuilder
             this.room.initMap(); // Initialisation de la carte de la pièce
             console.log("Room generated successfully:", this.room);
+            return this.room; // Retourner l'instance de RoomBuilder
         } catch (error) {
             console.error("Erreur lors de la génération de la pièce:", error);
-            this.room = null; // Assurez-vous que room est null en cas d'erreur
+            return null; // Retourner null en cas d'erreur
         }
-        return this.room;
     }
     
 

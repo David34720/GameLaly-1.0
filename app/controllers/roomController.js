@@ -224,7 +224,7 @@ const roomController = {
         try {
             console.log('Update cell data received:', req.body);
     
-            const { cell_id, room_id, layer_type, pos_x, pos_y, item_id, message_id, message, width, height } = req.body;
+            const { cell_id, layer_type, pos_x, pos_y, item_id,  width, height, offset_x, offset_y } = req.body;
     
             const cell = await Cell.findOne({
                 where: { id: cell_id }
@@ -234,27 +234,16 @@ const roomController = {
                 return res.status(404).json({ error: 'Cellule non trouvée' });
             }
     
-            let newMessageId = message_id;
-            if (message) {
-                if (message_id) {
-                    const existingMessage = await Message.findByPk(message_id);
-                    if (existingMessage) {
-                        await existingMessage.update({ text: message });
-                    }
-                } else {
-                    const newMessage = await Message.create({ room_id, text: message });
-                    newMessageId = newMessage.id;
-                }
-            }
     
             await cell.update({
                 item_id: item_id || null,
-                message_id: newMessageId || null,
                 width: width || 1,
                 height: height || 1,
                 layer_type: layer_type || 'element',
                 pos_x: pos_x || 0,
-                pos_y: pos_y || 0
+                pos_y: pos_y || 0,
+                offset_x: offset_x || 0,
+                offset_y: offset_y || 0
             });
     
             res.status(200).json({ message: 'Cellule mise à jour avec succès' });

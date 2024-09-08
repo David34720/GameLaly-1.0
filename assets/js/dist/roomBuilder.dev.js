@@ -51,7 +51,7 @@ function () {
 
     this.selectedItem = null; // Item actuellement sélectionné pour insertion dans une cellule
 
-    this.mode = 'select'; // Mode courant : 'select', 'insert', ou 'delete'
+    this.mode = 'play'; // Mode courant : 'select', 'insert', ou 'delete'
 
     this.layer = 'element'; // Layer courant : 'objet', 'character', ou 'element'
 
@@ -100,7 +100,7 @@ function () {
 
       this.setupEventListeners(); // Configure les événements utilisateur (clics, modes d'interaction, etc.).
 
-      this.updateModeUI(); // Met à jour l'affichage de l'interface utilisateur selon le mode actif.
+      this.changeMode('play'); // Met à jour l'affichage de l'interface utilisateur selon le mode actif.
 
       this.initPlayerPosition(); // Initialise la position du joueur
 
@@ -248,24 +248,28 @@ function () {
           nb_cols = _this$roomData.nb_cols,
           cell_size = _this$roomData.cell_size; // Créer 3 layers pour les différents types d'items
 
-      this.layerCharacters = []; // Items où item_type === 9 (personnages)
-
-      this.layerObjects = []; // Items où is_object === true (objets)
-
-      this.layerElements = []; // Les autres items ou cellules vides
-      // Crée les cellules
+      this.layerCharacters = [];
+      this.layerObjects = [];
+      this.layerElements = [];
 
       var _loop = function _loop(y) {
         var _loop2 = function _loop2(x) {
           var baseCell = {
             x: x * cell_size,
             y: y * cell_size,
+            size: cell_size,
+            height: 1,
+            width: 1,
+            offset_x: 0,
+            offset_y: 0,
             posX: x,
             posY: y,
             exists: false,
             item: null,
             message: null,
-            layer_type: 'default'
+            layer_type: 'default',
+            isObstacle: false // Par défaut, pas d'obstacle
+
           };
 
           var cellsFinded = _this2.roomData.cells.filter(function (c) {
@@ -274,8 +278,7 @@ function () {
 
           if (cellsFinded.length > 0) {
             cellsFinded.forEach(function (c) {
-              var cell = _objectSpread({}, baseCell); // Clone the baseCell for each layer
-
+              var cell = _objectSpread({}, baseCell);
 
               cell.exists = true;
               cell.item = c.item_id;
@@ -288,38 +291,89 @@ function () {
 
               if (item) {
                 if (item.item_type === 9) {
+                  // Personnage
                   cell.layer_type = 'personnage';
 
-                  _this2.layerCharacters.push(cell);
-                } else if (item.is_object) {
-                  cell.layer_type = 'object';
+                  _this2.replaceCellIfExists(_this2.layerCharacters, cell); // Remplacer si déjà vide
 
-                  _this2.layerObjects.push(cell);
+
+                  _this2.addCellIfNotExists(_this2.layerElements, _objectSpread({}, baseCell, {
+                    layer_type: 'element'
+                  }));
+
+                  _this2.addCellIfNotExists(_this2.layerObjects, _objectSpread({}, baseCell, {
+                    layer_type: 'object'
+                  }));
+                } else if (item.is_object) {
+                  // Objet
+                  cell.layer_type = 'object';
+                  cell.height = c.height;
+                  cell.width = c.width;
+                  cell.offset_x = c.offset_x;
+                  cell.offset_y = c.offset_y;
+
+                  _this2.replaceCellIfExists(_this2.layerObjects, cell); // Remplacer si déjà vide
+
+
+                  _this2.addCellIfNotExists(_this2.layerElements, _objectSpread({}, baseCell, {
+                    layer_type: 'element'
+                  }));
+
+                  _this2.addCellIfNotExists(_this2.layerCharacters, _objectSpread({}, baseCell, {
+                    layer_type: 'personnage'
+                  })); // Si l'objet est un obstacle, marquer la cellule comme obstacle
+
+
+                  if (item.is_obstacle) {
+                    cell.isObstacle = true;
+                    console.log('Cellule ' + cell.posX + ', ' + cell.posY + ' est un obstacle');
+                  } // Marquer les cellules couvertes par l'objet
+
+
+                  _this2.markCoveredCells(cell);
                 } else {
+                  // Élément
                   cell.layer_type = 'element';
 
-                  _this2.layerElements.push(cell);
+                  _this2.replaceCellIfExists(_this2.layerElements, cell); // Remplacer si déjà vide
+
+
+                  _this2.addCellIfNotExists(_this2.layerObjects, _objectSpread({}, baseCell, {
+                    layer_type: 'object'
+                  }));
+
+                  _this2.addCellIfNotExists(_this2.layerCharacters, _objectSpread({}, baseCell, {
+                    layer_type: 'personnage'
+                  }));
                 }
-              }
+              } // Ajouter la cellule à la liste générale des cellules
+
 
               _this2.cells.push(cell);
             });
           } else {
-            var emptyCell = _objectSpread({}, baseCell);
+            // Crée une cellule vide pour chaque layer si elle n'existe pas encore
+            var emptyCellElement = _objectSpread({}, baseCell, {
+              layer_type: 'element'
+            });
 
-            emptyCell.layer_type = 'element'; // Default to elements for empty cells
-
-            _this2.layerElements.push(emptyCell);
-
-            _this2.layerObjects.push(_objectSpread({}, baseCell, {
+            var emptyCellObject = _objectSpread({}, baseCell, {
               layer_type: 'object'
-            }));
+            });
 
-            _this2.layerCharacters.push(_objectSpread({}, baseCell, {
+            var emptyCellCharacter = _objectSpread({}, baseCell, {
               layer_type: 'personnage'
-            }));
+            }); // Ajouter la cellule vide dans chaque layer
 
-            _this2.cells.push(emptyCell);
+
+            _this2.addCellIfNotExists(_this2.layerElements, emptyCellElement);
+
+            _this2.addCellIfNotExists(_this2.layerObjects, emptyCellObject);
+
+            _this2.addCellIfNotExists(_this2.layerCharacters, emptyCellCharacter); // Ajouter la cellule vide à la liste générale des cellules
+
+
+            _this2.cells.push(emptyCellElement);
           }
         };
 
@@ -330,6 +384,80 @@ function () {
 
       for (var y = 0; y < nb_rows; y++) {
         _loop(y);
+      }
+
+      this.markAllCoveredCells();
+    } // Fonction utilitaire pour ajouter une cellule seulement si elle n'existe pas déjà dans le layer
+
+  }, {
+    key: "addCellIfNotExists",
+    value: function addCellIfNotExists(layer, newCell) {
+      var exists = layer.some(function (c) {
+        return c.posX === newCell.posX && c.posY === newCell.posY;
+      });
+
+      if (!exists) {
+        layer.push(newCell);
+      }
+    } // Fonction utilitaire pour remplacer une cellule vide existante si elle existe
+
+  }, {
+    key: "replaceCellIfExists",
+    value: function replaceCellIfExists(layer, newCell) {
+      var index = layer.findIndex(function (c) {
+        return c.posX === newCell.posX && c.posY === newCell.posY;
+      });
+
+      if (index !== -1 && !layer[index].exists) {
+        layer[index] = newCell; // Remplacer la cellule vide par celle avec l'item
+      } else if (index === -1) {
+        layer.push(newCell); // Si elle n'existe pas, on l'ajoute
+      }
+    }
+  }, {
+    key: "markAllCoveredCells",
+    value: function markAllCoveredCells() {
+      var _this3 = this;
+
+      // On parcourt uniquement les cellules contenant des objets qui sont des obstacles
+      this.layerObjects.forEach(function (cell) {
+        if (cell.isObstacle) {
+          _this3.markCoveredCells(cell); // Marque les cellules couvertes par cet objet
+
+        }
+      });
+    }
+  }, {
+    key: "markCoveredCells",
+    value: function markCoveredCells(cell) {
+      var _this4 = this;
+
+      var startX = cell.posX;
+      var startY = cell.posY;
+      var endX = startX + (cell.width || 1);
+      var endY = startY + (cell.height || 1);
+
+      var _loop3 = function _loop3(y) {
+        var _loop4 = function _loop4(x) {
+          // Marquer chaque cellule couverte comme un obstacle
+          var coveredCell = _this4.layerObjects.find(function (c) {
+            return c.posX === x && c.posY === y;
+          });
+
+          if (coveredCell) {
+            coveredCell.isObstacle = true; // Marquer la cellule comme couverte par un obstacle
+
+            console.log('Cellule couverte:', coveredCell);
+          }
+        };
+
+        for (var x = startX; x < endX; x++) {
+          _loop4(x);
+        }
+      };
+
+      for (var y = startY; y < endY; y++) {
+        _loop3(y);
       }
     } // Affiche la carte en créant les éléments HTML pour chaque cellule et en les positionnant dans le conteneur principal.
     // Les cellules existantes sont affichées avec une couleur spécifique et peuvent contenir un item.
@@ -366,7 +494,7 @@ function () {
   }, {
     key: "renderLayerMap",
     value: function renderLayerMap(layer, container, color) {
-      var _this3 = this;
+      var _this5 = this;
 
       var cell_size = this.roomData.cell_size; // On efface d'abord tout ce qui existe dans le container
 
@@ -375,25 +503,26 @@ function () {
         var cellElement = document.createElement("div");
         cellElement.className = "cell";
         cellElement.style.width = "".concat(cell_size, "px");
-        cellElement.style.height = "".concat(cell_size, "px"); // 
-        // cellElement.style.backgroundColor = color;
-        // Utilisation de position absolute pour positionner les cellules
+        cellElement.style.height = "".concat(cell_size, "px"); // Utilisation de position absolute pour positionner les cellules
 
         cellElement.style.position = "absolute";
         cellElement.style.left = "".concat(cell.posX * cell_size, "px");
-        cellElement.style.top = "".concat(cell.posY * cell_size, "px"); // Afficher l'item si la cellule contient un item
+        cellElement.style.top = "".concat(cell.posY * cell_size, "px");
+        cellElement.style.overflow = "visible"; // Permet à l'image de dépasser la cellule
+        // Afficher l'item si la cellule contient un item
 
         if (cell.exists && cell.item) {
-          _this3.renderItemInCell(cellElement, cell.item);
+          _this5.renderItemInCell(cellElement, cell); // Passer `cell` comme argument ici
+
         }
 
         container.appendChild(cellElement); // Ajout des événements d'interaction pour chaque cellule
 
         cellElement.addEventListener('mousedown', function () {
-          return _this3.onMouseDown(cell, cellElement);
+          return _this5.onMouseDown(cell, cellElement);
         });
         cellElement.addEventListener('mouseover', function () {
-          return _this3.onMouseOver(cell, cellElement);
+          return _this5.onMouseOver(cell, cellElement);
         });
       });
       this.updateLayerInteractivity();
@@ -478,6 +607,7 @@ function () {
 
 
       if (this.mode === 'select') {
+        console.log('Selected cell:', layerCell);
         this.selectCell(layerCell); // Sélectionne la cellule pour afficher ses détails
 
         return;
@@ -526,7 +656,7 @@ function () {
   }, {
     key: "saveSelectedCells",
     value: function saveSelectedCells() {
-      var _this4 = this;
+      var _this6 = this;
 
       var layerCells, layer_type, cellsData, url, method, response, errorMessage;
       return regeneratorRuntime.async(function saveSelectedCells$(_context3) {
@@ -584,7 +714,7 @@ function () {
                 }); // Trouve la cellule correspondante.
 
                 return {
-                  room_id: _this4.roomData.id,
+                  room_id: _this6.roomData.id,
                   // Identifiant de la pièce.
                   pos_x: cell.posX,
                   // Coordonnée X de la cellule.
@@ -689,7 +819,7 @@ function () {
   }, {
     key: "selectCell",
     value: function selectCell(cell) {
-      console.log("S\xE9lection de la cellule : (".concat(cell.posX, ", ").concat(cell.posY, ", ").concat(cell.id, ")"));
+      console.log("S\xE9lection de la cellule : (".concat(cell.posX, ", ").concat(cell.posY, ", ").concat(cell.item, ")"));
       this.showCellDetails(cell); // Affiche les détails de la cellule sélectionnée.
 
       if (cell.exists && cell.item) {
@@ -716,33 +846,34 @@ function () {
         while (1) {
           switch (_context4.prev = _context4.next) {
             case 0:
+              console.log("Affichage des d\xE9tails de la cellule : (".concat(cell.posX, ", ").concat(cell.posY, ", ").concat(cell.item, ")"));
               detailsContainer = document.getElementById("cell-details");
 
               if (detailsContainer) {
-                _context4.next = 4;
+                _context4.next = 5;
                 break;
               }
 
               console.error("Le conteneur de détails des cellules est introuvable.");
               return _context4.abrupt("return");
 
-            case 4:
-              _context4.next = 6;
+            case 5:
+              _context4.next = 7;
               return regeneratorRuntime.awrap(this.getMessageForCell(cell.id));
 
-            case 6:
+            case 7:
               messageForCell = _context4.sent;
               // Si le message est vide ou absent, afficher un texte par défaut
               messageContent = messageForCell ? messageForCell.text : 'Aucun message trouvé pour cette cellule'; // Injecter le contenu HTML
 
               detailsContainer.innerHTML = "\n            <form id=\"cell-edit-form\">\n                <input type=\"hidden\" name=\"room_id\" value=\"".concat(this.roomData.id, "\">\n                <input type=\"hidden\" name=\"pos_x\" value=\"").concat(cell.posX, "\">\n                <input type=\"hidden\" name=\"pos_y\" value=\"").concat(cell.posY, "\">\n                <input type=\"hidden\" name=\"layer_type\" value=\"").concat(cell.layer_type, "\">\n                <input type=\"hidden\" name=\"cell_id\" value=\"").concat(cell.id, "\">\n                \n                <!-- S\xE9lection de l'item -->\n                <div class=\"mb-3\">\n                    <span class=\"badge bg-info p-3\">S\xE9lection de l'item ").concat(cell.id, "</span>\n                </div>\n                <div class=\"mb-3\">\n                  <label for=\"item_id\" class=\"form-label\">Item</label>\n                  <select class=\"form-select\" id=\"item-id\" name=\"item_id\">\n                    <option value=\"\">Aucun</option>\n                    ").concat(this.items.map(function (item) {
                 return "\n                      <option value=\"".concat(item.id, "\" ").concat(cell.item === item.id ? 'selected' : '', ">").concat(item.name, "</option>\n                    ");
-              }).join(''), "\n                  </select>\n                </div>\n                \n                <!-- Position de la cellule -->\n                <div class=\"mb-3\">\n                    <label for=\"position\" class=\"form-label\">Position (x, y)</label>\n                    <input type=\"text\" class=\"form-control\" id=\"position\" name=\"position\" value=\"(").concat(cell.posX, ", ").concat(cell.posY, ")\" readonly>\n                </div>\n    \n                <!-- Largeur et hauteur avec des barres de d\xE9filement -->\n                <div class=\"mb-3\">\n                    <label for=\"width\" class=\"form-label\">Largeur</label>\n                    <div class=\"d-flex align-items-center\">\n                        <input type=\"range\" class=\"form-range\" id=\"width\" name=\"width\" min=\"1\" max=\"10\" value=\"").concat(cell.width, "\">\n                    </div>\n                </div>\n                <div class=\"mb-3\">\n                    <label for=\"height\" class=\"form-label\">Hauteur</label>\n                    <div class=\"d-flex align-items-center\">\n                        <input type=\"range\" class=\"form-range\" id=\"height\" name=\"height\" min=\"1\" max=\"10\" value=\"").concat(cell.height, "\">\n                    </div>\n                </div>\n            </form>\n    \n            <!-- Message -->\n            <form id=\"message-form\">\n                <input type=\"hidden\" name=\"cell_id\" value=\"").concat(cell.id, "\">\n                <div class=\"mb-3\">\n                    <label for=\"messageContent\" class=\"form-label\">Message</label>\n                    <textarea class=\"form-control\" id=\"messageContent\" name=\"messageContent\" rows=\"4\">").concat(messageContent, "</textarea>\n                </div>\n                <button type=\"submit\" class=\"btn btn-primary\" id=\"save-message-btn\" >Sauvegarder</button>\n            </form>\n        "); // Assurez-vous que le HTML est injecté avant d'appeler les écouteurs d'événements
+              }).join(''), "\n                  </select>\n                </div>\n                \n                <!-- Position de la cellule -->\n                <div class=\"mb-3\">\n                    <label for=\"position\" class=\"form-label\">Position (x, y)</label>\n                    <input type=\"text\" class=\"form-control\" id=\"position\" name=\"position\" value=\"(").concat(cell.posX, ", ").concat(cell.posY, ")\" readonly>\n                </div>\n                \n                <!-- Largeur et hauteur avec des barres de d\xE9filement -->\n                ").concat(cell.layer_type === 'object' ? "\n                <!-- Largeur et hauteur uniquement pour les objets -->\n                <div class=\"mb-3\">\n                    <label for=\"width\" class=\"form-label\">Largeur</label>\n                    <div class=\"d-flex align-items-center\">\n                        <input type=\"range\" class=\"form-range\" id=\"width\" name=\"width\" min=\"1\" max=\"10\" value=\"".concat(cell.width, "\">\n                    </div>\n                </div>\n                <div class=\"mb-3\">\n                    <label for=\"height\" class=\"form-label\">Hauteur</label>\n                    <div class=\"d-flex align-items-center\">\n                        <input type=\"range\" class=\"form-range\" id=\"height\" name=\"height\" min=\"1\" max=\"10\" value=\"").concat(cell.height, "\">\n                    </div>\n                </div>\n                <div class=\"mb-3\">\n                    <label for=\"height\" class=\"form-label\">Position Horizontale</label>\n                    <div class=\"d-flex align-items-center\">\n                        <input type=\"range\" class=\"form-range\" id=\"offset_x\" name=\"offset_x\" min=\"0\" max=\"").concat(cell.size, "\" value=\"").concat(cell.offset_x, "\">\n                    </div>\n                </div>\n                <div class=\"mb-3\">\n                    <label for=\"height\" class=\"form-label\">Position Horizontale</label>\n                    <div class=\"d-flex align-items-center\">\n                        <input type=\"range\" class=\"form-range\" id=\"offset_y\" name=\"offset_y\" min=\"0\" max=\"").concat(cell.size, "\" value=\"").concat(cell.offset_y, "\">\n                    </div>\n                </div>\n                ") : '', "\n            </form>\n    \n            <!-- Message -->\n            <form id=\"message-form\">\n                <input type=\"hidden\" name=\"cell_id\" value=\"").concat(cell.id, "\">\n                <div class=\"mb-3\">\n                    <label for=\"messageContent\" class=\"form-label\">Message</label>\n                    <textarea class=\"form-control\" id=\"messageContent\" name=\"messageContent\" rows=\"4\">").concat(messageContent, "</textarea>\n                </div>\n                <button type=\"submit\" class=\"btn btn-primary\" id=\"save-message-btn\" >Sauvegarder</button>\n            </form>\n        "); // Assurez-vous que le HTML est injecté avant d'appeler les écouteurs d'événements
 
-              this.attachFormListeners();
+              this.attachFormListeners(cell.layer_type);
               this.messageCellSubmitForm();
 
-            case 11:
+            case 12:
             case "end":
               return _context4.stop();
           }
@@ -752,46 +883,48 @@ function () {
 
   }, {
     key: "attachFormListeners",
-    value: function attachFormListeners() {
-      var _this5 = this;
+    value: function attachFormListeners(layer_type) {
+      var _this7 = this;
 
       var form = document.getElementById('cell-edit-form');
 
       if (!form) {
         console.error('Le formulaire de la cellule est introuvable.');
         return;
-      } // Synchroniser les champs de largeur et hauteur avec les sliders
-
-
-      var widthSlider = document.getElementById('width');
-      var heightSlider = document.getElementById('height');
-
-      if (widthSlider) {
-        widthSlider.addEventListener('input', function () {
-          _this5.autoSubmitForm(form);
-        });
-      } else {
-        console.warn('Le slider de largeur est introuvable.');
       }
 
-      if (heightSlider) {
-        heightSlider.addEventListener('input', function () {
-          _this5.autoSubmitForm(form);
-        });
-      } else {
-        console.warn('Le slider de hauteur est introuvable.');
+      if (layer_type === 'object') {
+        // Synchroniser les champs de largeur et hauteur avec les sliders
+        var widthSlider = document.getElementById('width');
+        var heightSlider = document.getElementById('height');
+
+        if (widthSlider) {
+          widthSlider.addEventListener('input', function () {
+            _this7.autoSubmitForm(form);
+          });
+        } else {
+          console.warn('Le slider de largeur est introuvable.');
+        }
+
+        if (heightSlider) {
+          heightSlider.addEventListener('input', function () {
+            _this7.autoSubmitForm(form);
+          });
+        } else {
+          console.warn('Le slider de hauteur est introuvable.');
+        }
       } // Soumission automatique lorsque l'utilisateur modifie le formulaire
 
 
       form.addEventListener('change', function () {
-        _this5.autoSubmitForm(form);
+        _this7.autoSubmitForm(form);
       }); // soumission du form message dans cell détail
 
       var btnSaveMessageCell = document.getElementById('message-form');
       btnSaveMessageCell.addEventListener('submit', function (event) {
         event.preventDefault();
 
-        _this5.messageCellSubmitForm();
+        _this7.messageCellSubmitForm();
       });
     }
   }, {
@@ -951,9 +1084,9 @@ function () {
 
   }, {
     key: "renderItemInCell",
-    value: function renderItemInCell(cellElement, itemId) {
+    value: function renderItemInCell(cellElement, cell) {
       var item = this.items.find(function (item) {
-        return item.id === Number(itemId);
+        return item.id === Number(cell.item);
       }); // Trouve l'item correspondant.
 
       if (item) {
@@ -969,25 +1102,32 @@ function () {
         itemElement.alt = item.name; // Définit l'alt pour l'accessibilité.
 
         itemElement.title = item.description; // Définit le titre pour afficher la description au survol.
+        // Appliquer les dimensions de l'image en fonction de la taille de l'objet
 
-        itemElement.style.position = "relative"; // Positionne l'image à l'intérieur de la cellule.
+        itemElement.style.position = "absolute"; // Permet à l'image de dépasser la cellule
 
-        itemElement.style.width = "100%"; // Définit la largeur de l'image.
+        itemElement.style.width = "".concat(cell.width * cell.size, "px"); // Appliquer la largeur de l'objet
 
-        itemElement.style.height = "100%"; // Définit la hauteur de l'image.
+        itemElement.style.height = "".concat(cell.height * cell.size, "px"); // Appliquer la hauteur de l'objet
+        // Appliquer les offsets (décalages) pour positionner l'image correctement
 
-        itemElement.draggable = false; // Empêche le glisser-déposer par défaut de l'image.
+        itemElement.style.left = "".concat(cell.offset_x, "px"); // Décalage horizontal
 
-        cellElement.appendChild(itemElement); // Ajoute l'image de l'item à la cellule.
+        itemElement.style.top = "".concat(cell.offset_y, "px"); // Décalage vertical
+        // Désactiver le glisser-déposer par défaut de l'image
+
+        itemElement.draggable = false; // Ajouter l'image à la cellule
+
+        cellElement.appendChild(itemElement);
       } else {
-        console.error("Item avec ID ".concat(itemId, " non trouv\xE9."));
+        console.error("Item avec ID ".concat(cell.item, " non trouv\xE9."));
       }
     } // Affiche la liste des items disponibles pour être placés dans les cellules.
 
   }, {
     key: "renderItemList",
     value: function renderItemList() {
-      var _this6 = this;
+      var _this8 = this;
 
       var itemListContainer = document.getElementById("item-list");
       itemListContainer.innerHTML = ""; // Vide la liste des items pour la réinitialiser.
@@ -1027,12 +1167,12 @@ function () {
       itemsForLayer.forEach(function (item) {
         var itemElement = document.createElement("div");
         itemElement.className = "item d-flex align-items-start mb-2";
-        itemElement.innerHTML = "\n                <img src=\"".concat(item.img, "\" alt=\"").concat(item.name, "\" title=\"").concat(item.description, "\" class=\"item-thumbnail me-2\" />\n                <div class=\"item-details\">\n                    <h6 class=\"item-name mb-1\">").concat(item.name, "</h6>\n                    <p class=\"item-description text-muted mb-0\">").concat(_this6.truncateText(item.description, 40), "</p>\n                </div>\n            "); // Ajoute un écouteur de clic pour sélectionner l'item
+        itemElement.innerHTML = "\n                <img src=\"".concat(item.img, "\" alt=\"").concat(item.name, "\" title=\"").concat(item.description, "\" class=\"item-thumbnail me-2\" />\n                <div class=\"item-details\">\n                    <h6 class=\"item-name mb-1\">").concat(item.name, "</h6>\n                    <p class=\"item-description text-muted mb-0\">").concat(_this8.truncateText(item.description, 40), "</p>\n                </div>\n            "); // Ajoute un écouteur de clic pour sélectionner l'item
 
         itemElement.addEventListener('click', function () {
-          _this6.selectedItem = item; // Définit l'item sélectionné lors du clic
+          _this8.selectedItem = item; // Définit l'item sélectionné lors du clic
 
-          _this6.updateModeUI();
+          _this8.updateModeUI();
         });
         itemElement.querySelector("img").draggable = false; // Empêche le glisser-déposer de l'image
 
@@ -1063,7 +1203,7 @@ function () {
   }, {
     key: "setupEventListeners",
     value: function setupEventListeners() {
-      var _this7 = this;
+      var _this9 = this;
 
       var playModeButton = document.getElementById("toggle-play-mode-button");
       var insertModeButton = document.getElementById("toggle-insert-mode-button");
@@ -1076,74 +1216,72 @@ function () {
           while (1) {
             switch (_context7.prev = _context7.next) {
               case 0:
-                _this7.changeMode('play');
+                _context7.prev = 0;
+                _context7.next = 3;
+                return regeneratorRuntime.awrap(_this9.gameEngine.initializeGame());
 
-                _this7.updateModeUI(); // Appeler initializeGame et attendre qu'il termine
-
-
-                _context7.prev = 2;
-                _context7.next = 5;
-                return regeneratorRuntime.awrap(_this7.gameEngine.initializeGame());
-
-              case 5:
-                _context7.next = 10;
+              case 3:
+                _context7.next = 8;
                 break;
 
-              case 7:
-                _context7.prev = 7;
-                _context7.t0 = _context7["catch"](2);
+              case 5:
+                _context7.prev = 5;
+                _context7.t0 = _context7["catch"](0);
                 console.error("Erreur lors de l'initialisation du jeu:", _context7.t0);
 
-              case 10:
+              case 8:
+                _this9.changeMode('play');
+
+              case 9:
               case "end":
                 return _context7.stop();
             }
           }
-        }, null, null, [[2, 7]]);
+        }, null, null, [[0, 5]]);
       });
       insertModeButton.addEventListener('click', function () {
-        _this7.changeMode('insert');
+        _this9.changeMode('insert');
 
-        _this7.updateModeUI();
+        _this9.updateModeUI();
       });
       deleteModeButton.addEventListener('click', function () {
-        _this7.changeMode('delete');
+        _this9.changeMode('delete');
 
-        _this7.updateModeUI();
+        _this9.updateModeUI();
       });
       selectModeButton.addEventListener('click', function () {
-        _this7.changeMode('select');
+        _this9.changeMode('select');
 
-        _this7.updateModeUI();
+        _this9.updateModeUI();
       }); // Ajout des événements pour la touche Shift (mode grab)
 
       document.addEventListener('keydown', function (event) {
         if (event.key === 'Shift') {
-          if (_this7.mode !== 'grab') {
-            _this7.previousMode = _this7.mode; // Sauvegarde du mode actuel
+          if (_this9.mode !== 'grab') {
+            _this9.previousMode = _this9.mode; // Sauvegarde du mode actuel
 
-            _this7.changeMode('grab'); // Passe en mode "grab"
+            _this9.changeMode('grab'); // Passe en mode "grab"
 
 
-            _this7.updateModeUI();
+            _this9.updateModeUI();
           }
         }
       });
       document.addEventListener('keyup', function (event) {
-        if (event.key === 'Shift' && _this7.mode === 'grab') {
-          _this7.changeMode(_this7.previousMode); // Restaure le mode précédent
+        if (event.key === 'Shift' && _this9.mode === 'grab') {
+          _this9.changeMode(_this9.previousMode); // Restaure le mode précédent
 
 
-          _this7.previousMode = null; // Réinitialise le mode précédent
+          _this9.previousMode = null; // Réinitialise le mode précédent
 
-          _this7.updateModeUI();
+          _this9.updateModeUI();
         }
       }); // Gestion du déplacement de la grille en mode "grab"
 
       var isGrabbing = false;
       var startX, startY, scrollLeft, scrollTop;
       mapContainer.addEventListener('mousedown', function (e) {
-        if (_this7.mode === 'grab') {
+        if (_this9.mode === 'grab') {
           isGrabbing = true;
           mapContainer.classList.add('grabbing');
           startX = e.pageX - mapContainer.offsetLeft;
@@ -1151,23 +1289,23 @@ function () {
           scrollLeft = mapContainer.scrollLeft;
           scrollTop = mapContainer.scrollTop;
 
-          _this7.updateModeUI();
+          _this9.updateModeUI();
         } else {
-          _this7.isMouseDown = true; // Interaction standard (non-grab)
+          _this9.isMouseDown = true; // Interaction standard (non-grab)
 
-          _this7.updateModeUI();
+          _this9.updateModeUI();
         }
       });
       mapContainer.addEventListener('mouseleave', function () {
         isGrabbing = false;
         mapContainer.classList.remove('grabbing');
-        _this7.isMouseDown = false; // S'assure que la souris n'est plus enfoncée
+        _this9.isMouseDown = false; // S'assure que la souris n'est plus enfoncée
       });
       mapContainer.addEventListener('mouseup', function () {
         isGrabbing = false;
         mapContainer.classList.remove('grabbing');
 
-        _this7.onMouseUp(); // Gestion de la fin du clic pour l'interaction standard
+        _this9.onMouseUp(); // Gestion de la fin du clic pour l'interaction standard
 
       });
       mapContainer.addEventListener('mousemove', function (e) {
@@ -1181,14 +1319,14 @@ function () {
 
           mapContainer.scrollLeft = scrollLeft - walkX;
           mapContainer.scrollTop = scrollTop - walkY;
-        } else if (_this7.isMouseDown) {
+        } else if (_this9.isMouseDown) {
           // Interaction standard pendant un clic maintenu
           var hoveredCell = document.elementFromPoint(e.clientX, e.clientY);
 
           if (hoveredCell && hoveredCell.classList.contains('cell')) {
-            var cell = _this7.getCellFromElement(hoveredCell);
+            var cell = _this9.getCellFromElement(hoveredCell);
 
-            _this7.onMouseOver(cell, hoveredCell); // Appelle la fonction pour gérer le survol
+            _this9.onMouseOver(cell, hoveredCell); // Appelle la fonction pour gérer le survol
 
           }
         }
@@ -1198,25 +1336,25 @@ function () {
       var toggleLayerObjectModeButton = document.getElementById("toggle-layerObject-mode-button");
       var toggleLayerCharacterModeButton = document.getElementById("toggle-layerCharacter-mode-button");
       toggleLayerElementModeButton.addEventListener('click', function () {
-        _this7.changeLayer('element');
+        _this9.changeLayer('element');
 
-        _this7.selectedItem = null;
+        _this9.selectedItem = null;
 
-        _this7.updateModeUI();
+        _this9.updateModeUI();
       });
       toggleLayerObjectModeButton.addEventListener('click', function () {
-        _this7.changeLayer('object');
+        _this9.changeLayer('object');
 
-        _this7.updateModeUI();
+        _this9.updateModeUI();
       });
       toggleLayerCharacterModeButton.addEventListener('click', function () {
-        _this7.changeLayer('character');
+        _this9.changeLayer('character');
 
-        _this7.updateModeUI();
+        _this9.updateModeUI();
       }); // Ajout d'un écouteur global pour capturer les événements de relâchement de souris
 
       document.addEventListener('mouseup', function () {
-        return _this7.onMouseUp();
+        return _this9.onMouseUp();
       });
     }
   }, {
@@ -1234,9 +1372,17 @@ function () {
     key: "changeMode",
     value: function changeMode(newMode) {
       this.mode = newMode;
+      console.log("Mode changé en :", this.mode);
+      this.layer = null;
+      this.updateLayerButtons(); // Met à jour l'état des boutons de layer dans l'UI
+
+      this.updateLayerInteractivity(); // Met à jour la visibilité et l'interactivité des layers
+
+      this.renderItemList(); // Réaffiche la liste des items filtrés selon le layer
+
+      this.updateModeUI(); // Met à jour l'UI avec le nouveau mode et layer
+
       this.updateModeButtons();
-      this.updateModeUI();
-      this.updateLayerInteractivity();
     }
   }, {
     key: "getLayerCells",
@@ -1279,6 +1425,7 @@ function () {
       var itemText = this.selectedItem ? " - ".concat(this.selectedItem.name) : ''; // Vérifie si un item est sélectionné
 
       var bannerText = '';
+      console.log("Mode update en :", this.mode);
 
       switch (this.mode) {
         case 'play':
