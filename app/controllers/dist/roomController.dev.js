@@ -684,12 +684,12 @@ var roomController = {
               break;
             }
 
-            return _context12.abrupt("return", res.json({
+            return _context12.abrupt("return", res.status(200).json({
               text: ''
             }));
 
           case 7:
-            res.json(cellWithMessage.message); // Retourne le message s'il existe
+            res.status(200).json(cellWithMessage.message); // Retourne le message s'il existe
 
             _context12.next = 14;
             break;

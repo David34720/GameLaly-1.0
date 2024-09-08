@@ -91,6 +91,10 @@ export class RoomBuilder {
     }
 
     async getMessageForCell(cell_id) {
+        if (!cell_id) {
+            return { text: '' }; // Retourne un objet vide si l'id est invalide
+        }
+    
         try {
             const response = await fetch(`/room/get-message-for-cell/${cell_id}`, {
                 method: 'GET',
@@ -104,11 +108,11 @@ export class RoomBuilder {
             }
     
             const message = await response.json();
-    
             return message;
     
         } catch (error) {
             console.error('Erreur lors de la récupération des messages de la cellule :', error);
+            return { text: '' }; // Retourne un texte vide en cas d'erreur
         }
     }
 
@@ -230,8 +234,8 @@ export class RoomBuilder {
             cellElement.className = "cell";
             cellElement.style.width = `${cell_size}px`;
             cellElement.style.height = `${cell_size}px`;
-            cellElement.style.border = "1px solid #ccc";
-            cellElement.style.backgroundColor = color;
+            // 
+            // cellElement.style.backgroundColor = color;
 
             // Utilisation de position absolute pour positionner les cellules
             cellElement.style.position = "absolute";
@@ -285,7 +289,6 @@ export class RoomBuilder {
     // Gère l'interaction avec une cellule en fonction du mode sélectionné (sélection, insertion, suppression).
     handleCellInteraction(cell, cellElement) {
         const cellKey = `${cell.posX}-${cell.posY}`; // Clé unique pour identifier chaque cellule.
-        // Choisissez le bon layer en fonction du layer actif
         let layerCells;
         switch (this.layer) {
         case 'element':
@@ -302,9 +305,12 @@ export class RoomBuilder {
             break;
         }
     
-        // Vérifiez si la cellule fait partie du layer courant
+        // Vérifie que layerCell existe avant de continuer
         const layerCell = layerCells.find(lCell => lCell.posX === cell.posX && lCell.posY === cell.posY);
-        if (!layerCell) return; // Si la cellule n'appartient pas au layer actuel, on ne fait rien
+        if (!layerCell) {
+            console.warn('Aucune cellule trouvée pour cette position.');
+            return; // Arrête si la cellule n'est pas trouvée
+        }
     
         // Sélection de cellule
         if (this.mode === 'select') {
@@ -324,8 +330,8 @@ export class RoomBuilder {
             this.selectedCells.add(cellKey); // Ajoute la cellule sélectionnée à l'ensemble des cellules à sauvegarder
             cellElement.style.backgroundColor = "#fff"; // Indication visuelle
         }
-       
     }
+    
     
 
     // Met à jour l'apparence d'une cellule spécifique après modification (insertion ou suppression d'item).
@@ -758,7 +764,7 @@ export class RoomBuilder {
             // Ajoute un écouteur de clic pour sélectionner l'item
             itemElement.addEventListener('click', () => {
                 this.selectedItem = item; // Définit l'item sélectionné lors du clic
-              
+                this.updateModeUI();
             });
     
             itemElement.querySelector("img").draggable = false; // Empêche le glisser-déposer de l'image
@@ -798,6 +804,7 @@ export class RoomBuilder {
         // Écouteurs pour les boutons de mode
         playModeButton.addEventListener('click', async () => {
             this.changeMode('play');
+            this.updateModeUI();
             
             // Appeler initializeGame et attendre qu'il termine
             try {
@@ -809,14 +816,17 @@ export class RoomBuilder {
     
         insertModeButton.addEventListener('click', () => {
             this.changeMode('insert');
+            this.updateModeUI();
         });
     
         deleteModeButton.addEventListener('click', () => {
             this.changeMode('delete');
+            this.updateModeUI();
         });
     
         selectModeButton.addEventListener('click', () => {
             this.changeMode('select');
+            this.updateModeUI();
         });
     
         // Ajout des événements pour la touche Shift (mode grab)
@@ -825,6 +835,7 @@ export class RoomBuilder {
                 if (this.mode !== 'grab') {
                     this.previousMode = this.mode; // Sauvegarde du mode actuel
                     this.changeMode('grab'); // Passe en mode "grab"
+                    this.updateModeUI();
                 }
             }
         });
@@ -833,6 +844,7 @@ export class RoomBuilder {
             if (event.key === 'Shift' && this.mode === 'grab') {
                 this.changeMode(this.previousMode); // Restaure le mode précédent
                 this.previousMode = null; // Réinitialise le mode précédent
+                this.updateModeUI();
             }
         });
     
@@ -848,8 +860,10 @@ export class RoomBuilder {
                 startY = e.pageY - mapContainer.offsetTop;
                 scrollLeft = mapContainer.scrollLeft;
                 scrollTop = mapContainer.scrollTop;
+                this.updateModeUI();
             } else {
                 this.isMouseDown = true; // Interaction standard (non-grab)
+                this.updateModeUI();
             }
         });
     
@@ -891,6 +905,7 @@ export class RoomBuilder {
     
         toggleLayerElementModeButton.addEventListener('click', () => {
             this.changeLayer('element');
+            this.selectedItem = null;
             this.updateModeUI();
         });
     
@@ -960,41 +975,47 @@ export class RoomBuilder {
         const banner = document.getElementById('mode-banner');
         const body = document.querySelector('body');
     
-        body.classList.remove('mode-insert', 'mode-delete', 'mode-select', 'mode-grab'); // Supprime les classes de mode précédentes.
+        body.classList.remove('mode-insert', 'mode-delete', 'mode-select', 'mode-grab', 'mode-play'); // Supprime les classes de mode précédentes.
+    
+        let itemText = this.selectedItem ? ` - ${this.selectedItem.name}` : ''; // Vérifie si un item est sélectionné
+        let bannerText = '';
     
         switch (this.mode) {
         case 'play':
-            banner.textContent = `Jouer - ${this.layer}`;
-            banner.className = "banner banner-insert";
+            bannerText = `Jouer - ${this.layer}`;
+            banner.className = "banner banner-play";
             body.classList.add('mode-play');
             break;
         case 'insert':
-            banner.textContent = `Insertion - ${this.layer}`;
+            bannerText = `Insertion - ${this.layer}${itemText}`;
             banner.className = "banner banner-insert";
             body.classList.add('mode-insert');
             break;
         case 'delete':
-            banner.textContent = `Suppression - ${this.layer}`;
+            bannerText = `Suppression - ${this.layer}`;
             banner.className = "banner banner-delete";
             body.classList.add('mode-delete');
             break;
         case 'select':
-            banner.textContent = `Selection - ${this.layer}`;
+            bannerText = `Sélection - ${this.layer}${itemText}`;
             banner.className = "banner banner-select";
             body.classList.add('mode-select');
             break;
         case 'grab':
-            banner.textContent = `Grab - ${this.layer}`;
+            bannerText = `Grab - ${this.layer}`;
             banner.className = "banner banner-grab";
             body.classList.add('mode-grab');
             break;
         default:
-            banner.textContent = `Selection - ${this.layer}`;
+            bannerText = `Sélection - ${this.layer}`;
             banner.className = "banner banner-select";
             body.classList.add('mode-select');
             break;
         }
+    
+        banner.textContent = bannerText;
     }
+    
 
     changeLayer(newLayer) {
         // Si on clique à nouveau sur le même layer, on désactive ce layer pour afficher tous les items
@@ -1004,9 +1025,13 @@ export class RoomBuilder {
             this.layer = newLayer; // Activation du nouveau layer
         }
     
+        // Réinitialise l'item sélectionné à null à chaque changement de layer
+        this.selectedItem = null;
+        
         this.updateLayerButtons(); // Met à jour l'état des boutons de layer dans l'UI
         this.updateLayerInteractivity(); // Met à jour la visibilité et l'interactivité des layers
         this.renderItemList(); // Réaffiche la liste des items filtrés selon le layer
+        this.updateModeUI(); // Met à jour l'UI avec le nouveau mode et layer
     }
     
     

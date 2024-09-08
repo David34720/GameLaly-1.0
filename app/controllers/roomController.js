@@ -307,15 +307,16 @@ const roomController = {
     
             // Si la cellule ou le message n'existe pas, retourner un message vide
             if (!cellWithMessage || !cellWithMessage.message) {
-                return res.json({ text: '' });  // Retourne un objet avec un texte vide
+                return res.status(200).json({ text: '' });  // Retourne un objet avec un texte vide
             }
     
-            res.json(cellWithMessage.message);  // Retourne le message s'il existe
+            res.status(200).json(cellWithMessage.message);  // Retourne le message s'il existe
         } catch (error) {
             console.error('Erreur lors de la récupération du message pour la cellule :', error);
             res.status(500).json({ error: 'Erreur serveur lors de la récupération du message' });
         }
     },
+    
     
     
     async updateCellMessage(req, res) {

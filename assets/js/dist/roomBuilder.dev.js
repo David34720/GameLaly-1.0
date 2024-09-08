@@ -184,8 +184,18 @@ function () {
         while (1) {
           switch (_context2.prev = _context2.next) {
             case 0:
-              _context2.prev = 0;
-              _context2.next = 3;
+              if (cell_id) {
+                _context2.next = 2;
+                break;
+              }
+
+              return _context2.abrupt("return", {
+                text: ''
+              });
+
+            case 2:
+              _context2.prev = 2;
+              _context2.next = 5;
               return regeneratorRuntime.awrap(fetch("/room/get-message-for-cell/".concat(cell_id), {
                 method: 'GET',
                 headers: {
@@ -193,35 +203,38 @@ function () {
                 }
               }));
 
-            case 3:
+            case 5:
               response = _context2.sent;
 
               if (response.ok) {
-                _context2.next = 6;
+                _context2.next = 8;
                 break;
               }
 
               throw new Error('Erreur lors de la récupération des messages');
 
-            case 6:
-              _context2.next = 8;
+            case 8:
+              _context2.next = 10;
               return regeneratorRuntime.awrap(response.json());
 
-            case 8:
+            case 10:
               message = _context2.sent;
               return _context2.abrupt("return", message);
 
-            case 12:
-              _context2.prev = 12;
-              _context2.t0 = _context2["catch"](0);
+            case 14:
+              _context2.prev = 14;
+              _context2.t0 = _context2["catch"](2);
               console.error('Erreur lors de la récupération des messages de la cellule :', _context2.t0);
+              return _context2.abrupt("return", {
+                text: ''
+              });
 
-            case 15:
+            case 18:
             case "end":
               return _context2.stop();
           }
         }
-      }, null, null, [[0, 12]]);
+      }, null, null, [[2, 14]]);
     } // Crée les cellules de la carte en fonction des données de la pièce (roomData) fournies lors de l'instanciation.
     // Les cellules sont initialisées avec leur position, leur taille, et les éventuels items ou messages.
 
@@ -362,9 +375,9 @@ function () {
         var cellElement = document.createElement("div");
         cellElement.className = "cell";
         cellElement.style.width = "".concat(cell_size, "px");
-        cellElement.style.height = "".concat(cell_size, "px");
-        cellElement.style.border = "1px solid #ccc";
-        cellElement.style.backgroundColor = color; // Utilisation de position absolute pour positionner les cellules
+        cellElement.style.height = "".concat(cell_size, "px"); // 
+        // cellElement.style.backgroundColor = color;
+        // Utilisation de position absolute pour positionner les cellules
 
         cellElement.style.position = "absolute";
         cellElement.style.left = "".concat(cell.posX * cell_size, "px");
@@ -432,7 +445,6 @@ function () {
     key: "handleCellInteraction",
     value: function handleCellInteraction(cell, cellElement) {
       var cellKey = "".concat(cell.posX, "-").concat(cell.posY); // Clé unique pour identifier chaque cellule.
-      // Choisissez le bon layer en fonction du layer actif
 
       var layerCells;
 
@@ -452,14 +464,18 @@ function () {
         default:
           layerCells = this.cells;
           break;
-      } // Vérifiez si la cellule fait partie du layer courant
+      } // Vérifie que layerCell existe avant de continuer
 
 
       var layerCell = layerCells.find(function (lCell) {
         return lCell.posX === cell.posX && lCell.posY === cell.posY;
       });
-      if (!layerCell) return; // Si la cellule n'appartient pas au layer actuel, on ne fait rien
-      // Sélection de cellule
+
+      if (!layerCell) {
+        console.warn('Aucune cellule trouvée pour cette position.');
+        return; // Arrête si la cellule n'est pas trouvée
+      } // Sélection de cellule
+
 
       if (this.mode === 'select') {
         this.selectCell(layerCell); // Sélectionne la cellule pour afficher ses détails
@@ -1015,6 +1031,8 @@ function () {
 
         itemElement.addEventListener('click', function () {
           _this6.selectedItem = item; // Définit l'item sélectionné lors du clic
+
+          _this6.updateModeUI();
         });
         itemElement.querySelector("img").draggable = false; // Empêche le glisser-déposer de l'image
 
@@ -1058,37 +1076,45 @@ function () {
           while (1) {
             switch (_context7.prev = _context7.next) {
               case 0:
-                _this7.changeMode('play'); // Appeler initializeGame et attendre qu'il termine
+                _this7.changeMode('play');
+
+                _this7.updateModeUI(); // Appeler initializeGame et attendre qu'il termine
 
 
-                _context7.prev = 1;
-                _context7.next = 4;
+                _context7.prev = 2;
+                _context7.next = 5;
                 return regeneratorRuntime.awrap(_this7.gameEngine.initializeGame());
 
-              case 4:
-                _context7.next = 9;
+              case 5:
+                _context7.next = 10;
                 break;
 
-              case 6:
-                _context7.prev = 6;
-                _context7.t0 = _context7["catch"](1);
+              case 7:
+                _context7.prev = 7;
+                _context7.t0 = _context7["catch"](2);
                 console.error("Erreur lors de l'initialisation du jeu:", _context7.t0);
 
-              case 9:
+              case 10:
               case "end":
                 return _context7.stop();
             }
           }
-        }, null, null, [[1, 6]]);
+        }, null, null, [[2, 7]]);
       });
       insertModeButton.addEventListener('click', function () {
         _this7.changeMode('insert');
+
+        _this7.updateModeUI();
       });
       deleteModeButton.addEventListener('click', function () {
         _this7.changeMode('delete');
+
+        _this7.updateModeUI();
       });
       selectModeButton.addEventListener('click', function () {
         _this7.changeMode('select');
+
+        _this7.updateModeUI();
       }); // Ajout des événements pour la touche Shift (mode grab)
 
       document.addEventListener('keydown', function (event) {
@@ -1098,6 +1124,8 @@ function () {
 
             _this7.changeMode('grab'); // Passe en mode "grab"
 
+
+            _this7.updateModeUI();
           }
         }
       });
@@ -1107,6 +1135,8 @@ function () {
 
 
           _this7.previousMode = null; // Réinitialise le mode précédent
+
+          _this7.updateModeUI();
         }
       }); // Gestion du déplacement de la grille en mode "grab"
 
@@ -1120,8 +1150,12 @@ function () {
           startY = e.pageY - mapContainer.offsetTop;
           scrollLeft = mapContainer.scrollLeft;
           scrollTop = mapContainer.scrollTop;
+
+          _this7.updateModeUI();
         } else {
           _this7.isMouseDown = true; // Interaction standard (non-grab)
+
+          _this7.updateModeUI();
         }
       });
       mapContainer.addEventListener('mouseleave', function () {
@@ -1165,6 +1199,8 @@ function () {
       var toggleLayerCharacterModeButton = document.getElementById("toggle-layerCharacter-mode-button");
       toggleLayerElementModeButton.addEventListener('click', function () {
         _this7.changeLayer('element');
+
+        _this7.selectedItem = null;
 
         _this7.updateModeUI();
       });
@@ -1238,45 +1274,51 @@ function () {
     value: function updateModeUI() {
       var banner = document.getElementById('mode-banner');
       var body = document.querySelector('body');
-      body.classList.remove('mode-insert', 'mode-delete', 'mode-select', 'mode-grab'); // Supprime les classes de mode précédentes.
+      body.classList.remove('mode-insert', 'mode-delete', 'mode-select', 'mode-grab', 'mode-play'); // Supprime les classes de mode précédentes.
+
+      var itemText = this.selectedItem ? " - ".concat(this.selectedItem.name) : ''; // Vérifie si un item est sélectionné
+
+      var bannerText = '';
 
       switch (this.mode) {
         case 'play':
-          banner.textContent = "Jouer - ".concat(this.layer);
-          banner.className = "banner banner-insert";
+          bannerText = "Jouer - ".concat(this.layer);
+          banner.className = "banner banner-play";
           body.classList.add('mode-play');
           break;
 
         case 'insert':
-          banner.textContent = "Insertion - ".concat(this.layer);
+          bannerText = "Insertion - ".concat(this.layer).concat(itemText);
           banner.className = "banner banner-insert";
           body.classList.add('mode-insert');
           break;
 
         case 'delete':
-          banner.textContent = "Suppression - ".concat(this.layer);
+          bannerText = "Suppression - ".concat(this.layer);
           banner.className = "banner banner-delete";
           body.classList.add('mode-delete');
           break;
 
         case 'select':
-          banner.textContent = "Selection - ".concat(this.layer);
+          bannerText = "S\xE9lection - ".concat(this.layer).concat(itemText);
           banner.className = "banner banner-select";
           body.classList.add('mode-select');
           break;
 
         case 'grab':
-          banner.textContent = "Grab - ".concat(this.layer);
+          bannerText = "Grab - ".concat(this.layer);
           banner.className = "banner banner-grab";
           body.classList.add('mode-grab');
           break;
 
         default:
-          banner.textContent = "Selection - ".concat(this.layer);
+          bannerText = "S\xE9lection - ".concat(this.layer);
           banner.className = "banner banner-select";
           body.classList.add('mode-select');
           break;
       }
+
+      banner.textContent = bannerText;
     }
   }, {
     key: "changeLayer",
@@ -1286,13 +1328,17 @@ function () {
         this.layer = null; // Désactivation du layer actif
       } else {
         this.layer = newLayer; // Activation du nouveau layer
-      }
+      } // Réinitialise l'item sélectionné à null à chaque changement de layer
 
+
+      this.selectedItem = null;
       this.updateLayerButtons(); // Met à jour l'état des boutons de layer dans l'UI
 
       this.updateLayerInteractivity(); // Met à jour la visibilité et l'interactivité des layers
 
       this.renderItemList(); // Réaffiche la liste des items filtrés selon le layer
+
+      this.updateModeUI(); // Met à jour l'UI avec le nouveau mode et layer
     } // Fonction pour mettre à jour l'interactivité des layers
 
   }, {

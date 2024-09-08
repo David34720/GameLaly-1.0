@@ -95,7 +95,9 @@ body {
     opacity: 1; /* Les layers non actifs sont moins visibles */
     transition: opacity 0.3s ease; /* Transition fluide pour le changement d'opacité */
 }
-
+/* .map-layer > * {
+    background-color: transparent !important;
+} */
 
 /* Z-index pour chaque layer */
 #map-container-elements {
@@ -136,7 +138,6 @@ body {
     position: absolute;
     box-sizing: border-box;
     border: 1px solid #ccc;
-    background-color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
