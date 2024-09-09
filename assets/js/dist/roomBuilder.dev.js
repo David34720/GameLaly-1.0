@@ -724,7 +724,8 @@ function () {
                   // Identifiant de l'item (null si aucun).
                   message_id: cell.exists ? cell.message : null,
                   // Identifiant du message (null si aucun).
-                  layer_type: layer_type
+                  layer_type: layer_type,
+                  cell_id: cell.id
                 };
               });
               url = '/rooms/save-cells'; // URL par défaut pour l'insertion

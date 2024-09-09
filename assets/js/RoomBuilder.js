@@ -478,7 +478,8 @@ export class RoomBuilder {
                 pos_y: cell.posY, // Coordonnée Y de la cellule.
                 item_id: cell.exists ? cell.item : null, // Identifiant de l'item (null si aucun).
                 message_id: cell.exists ? cell.message : null, // Identifiant du message (null si aucun).
-                layer_type: layer_type
+                layer_type: layer_type,
+                cell_id: cell.id
             };
         });
     
