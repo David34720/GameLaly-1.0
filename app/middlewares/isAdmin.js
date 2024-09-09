@@ -1,30 +1,34 @@
 const { User } = require('../models');
 
+/**
+ * Ce middleware laisse passer les utilisateurs qui ont un rôle boss ou une permission all
+ * @param req
+ * @param res
+ * @param next
+ * @returns {Promise<*>}
+ */
 async function isAdmin(req, res, next) {
     const user = req.session?.user;
-
-    if (!user) {
-        return res.redirect('/login'); // Redirige vers la page de connexion si l'utilisateur n'est pas défini
-    }
 
     const userInstance = await User.findByPk(user.id, {
         include: { all: true, nested: true },
     });
 
-    if (!userInstance) {
-        const error = new Error('Utilisateur non trouvé');
-        error.statusCode = 404;
-        return next(error);
-    }
-
     let role = null;
 
     if (Object.prototype.hasOwnProperty.call(userInstance.dataValues, 'role')) {
-        role = userInstance.dataValues.role.name === 'admin';
+        role = userInstance.dataValues.role.name === 'boss';
     }
 
     if (role) {
         return next();
+    }
+
+    const permissions = userInstance.permissions;
+    for (const permission of permissions) {
+        if (permission.name === 'all') {
+            return next();
+        }
     }
 
     const error = new Error('Vous ne passerez pas !');

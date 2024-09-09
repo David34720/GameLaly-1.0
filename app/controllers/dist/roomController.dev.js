@@ -819,7 +819,8 @@ var roomController = {
                 room_id: cellData.room_id,
                 pos_x: cellData.pos_x,
                 pos_y: cellData.pos_y,
-                id: cellData.cell_id
+                id: cellData.cell_id,
+                layer_type: cellData.layer_type
               }
             }));
 
