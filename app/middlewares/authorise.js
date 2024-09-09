@@ -1,10 +1,12 @@
 const { User } = require('../models');
+const { Gate } = require('../auth/Gate');
 
 /**
- *
- * @param {array} actions les permssions recherchées
+ * Ce middleware laisse passer si user possède la permission action
+ * @param {string} action la permissions recherchée
+ * @returns {(function(*, *, *): Promise<*>)|*}
  */
-function authorise(actions) {
+function authorise(action) {
     return async (req, res, next) => {
         const { id } = req.session.user;
 
@@ -12,15 +14,13 @@ function authorise(actions) {
             include: { association: 'role', include: 'permissions' },
         });
 
-        for (const action of actions) {
-            if (user.can(action)) {
-                return next();
-            }
+        if (Gate.allows(action, user)) {
+            return next();
         }
 
         const error = new Error('You shall not pass !');
         error.statusCode = 403;
-        next(error);
+        return next(error);
     };
 }
 
