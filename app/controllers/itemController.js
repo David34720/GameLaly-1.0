@@ -50,7 +50,7 @@ const itemController = {
         const valueInt = parseInt(value, 10);
     
         // Vérification des paramètres
-        if (!name || !description || !req.file || isNaN(itemTypeInt) || isNaN(effectInt) || isNaN(lifeInt) || isNaN(valueInt) || !context) {
+        if (!name || !req.file || isNaN(itemTypeInt) || isNaN(effectInt) || isNaN(lifeInt) || isNaN(valueInt) ) {
             req.session.notification = {
                 message: "Tous les champs sont requis et doivent être valides.",
                 level: 'error'
@@ -112,7 +112,7 @@ const itemController = {
         const lifeInt = parseInt(life, 10);
         const valueInt = parseInt(value, 10);
     
-        if (!name || !description || isNaN(itemTypeInt) || isNaN(effectInt) || isNaN(lifeInt) || isNaN(valueInt) || !context) {
+        if (!name  || isNaN(itemTypeInt) || isNaN(effectInt) || isNaN(lifeInt) || isNaN(valueInt)) {
             req.session.notification = {
                 message: "Tous les champs sont requis et doivent être valides.",
                 level: 'error'

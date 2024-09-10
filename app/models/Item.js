@@ -21,7 +21,7 @@ Item.init(
 
         description: {
             type: DataTypes.TEXT,
-            allowNull: false,
+            allowNull: true,
         },
         
         img: {
@@ -51,18 +51,16 @@ Item.init(
         
         context: {
             type: DataTypes.TEXT,
-            allowNull: false,       
+            allowNull: true,       
         },
         
         is_obstacle: {
             type: DataTypes.BOOLEAN,
-            allowNull: false,
             defaultValue: false,       
         },
 
         is_object: {
             type: DataTypes.BOOLEAN,
-            allowNull: false,
             defaultValue: false,       
         },
         

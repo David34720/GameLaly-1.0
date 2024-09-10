@@ -11,7 +11,7 @@
 
         <div class="mb-3">
             <label class="form-label" for="description">Description</label>
-            <input class="form-control" type="text" name="description" id="description" placeholder="Description de l'Item" required>
+            <input class="form-control" type="text" name="description" id="description" placeholder="Description de l'Item" >
         </div>
 
         <div class="mb-3">
@@ -31,22 +31,22 @@
 
         <div class="mb-3">
             <label class="form-label" for="effect">Effet</label>
-            <input class="form-control" type="number" name="effect" id="effect" placeholder="Valeur de l'effet" required>
+            <input class="form-control" type="number" name="effect" id="effect" placeholder="Valeur de l'effet" required value="0">
         </div>
 
         <div class="mb-3">
             <label class="form-label" for="life">Vie</label>
-            <input class="form-control" type="number" name="life" id="life" placeholder="Points de vie" required>
+            <input class="form-control" type="number" name="life" id="life" placeholder="Points de vie" required value="1000">
         </div>
 
         <div class="mb-3">
             <label class="form-label" for="value">Valeur</label>
-            <input class="form-control" type="number" name="value" id="value" placeholder="Valeur de l'Item" required>
+            <input class="form-control" type="number" name="value" id="value" placeholder="Valeur de l'Item" required value="50">
         </div>
 
         <div class="mb-3">
             <label class="form-label" for="context">Contexte</label>
-            <textarea class="form-control" name="context" id="context" rows="3" placeholder="Contexte d'utilisation" required></textarea>
+            <textarea class="form-control" name="context" id="context" rows="3" placeholder="Contexte d'utilisation"></textarea>
         </div>
         
         <div class="mb-3">
@@ -54,7 +54,14 @@
             <input class="form-check-input" type="checkbox" name="is_obstacle" id="is_obstacle">
         </div>
 
-        <input class="btn btn-primary mt-3" type="submit" value="Créer l'Item">
+        <div class="mb-3"></div>
+            <label class="form-label" for="is_object">Objet</label>
+            <input class="form-check-input" type="checkbox" name="is_object" id="is_object" >
+        </div>
+        <div class="mb-3">
+            <input class="btn btn-primary mt-3" type="submit" value="Créer l'Item">
+
+        </div>
     </form>
 </main>
 
